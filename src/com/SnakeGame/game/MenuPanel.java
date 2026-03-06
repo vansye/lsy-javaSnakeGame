@@ -6,7 +6,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.Graphics;
 
 public class MenuPanel extends JPanel {
-    private static String state;
+    private static String state = "normal";
     private static boolean isStart = false;
     private static boolean rankingMode = false;
     JButton normalButton = new JButton("Normal Model");

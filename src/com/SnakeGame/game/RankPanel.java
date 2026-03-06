@@ -3,6 +3,8 @@ package com.SnakeGame.game;
 import javax.swing.*;
 import java.awt.*;
 import java.io.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Properties;
 
 public class RankPanel extends JPanel {
@@ -11,6 +13,11 @@ public class RankPanel extends JPanel {
     private static int[] hardRank = new int[10];
     private  static int[] crazyRank =  new int[10];
     private static int[] rank = new int[10];
+    private static LocalDateTime[] normalTime = new LocalDateTime[10];
+    private static LocalDateTime[] hardTime = new LocalDateTime[10];
+    private static LocalDateTime[] crazyTime = new LocalDateTime[10];
+    private static LocalDateTime[] rankTime = new LocalDateTime[10];
+
     private static String currentModel = "normal";
     private JButton menuButton = new JButton("返回菜单");
     private static final String RANK_FILE = "rankings.dat";
@@ -23,6 +30,7 @@ public class RankPanel extends JPanel {
         setLayout(null);
         setupButton();
     }
+
 
     private void setupButton() {
         menuButton.setBounds(300, 600, 200, 40);
@@ -43,14 +51,17 @@ public class RankPanel extends JPanel {
             case "normal" -> {
                 currentModel = "normal";
                 System.arraycopy(normalRank, 0, rank, 0, normalRank.length);
+                System.arraycopy(normalTime, 0, rankTime, 0, normalTime.length);
             }
             case "hard" -> {
                 currentModel = "hard";
                 System.arraycopy(hardRank, 0, rank, 0, hardRank.length);
+                System.arraycopy(hardTime, 0, rankTime, 0, hardTime.length);
             }
             case "crazy" -> {
                 currentModel = "crazy";
                 System.arraycopy(crazyRank, 0, rank, 0, crazyRank.length);
+                System.arraycopy(crazyTime, 0, rankTime, 0, crazyTime.length);
             }
         }
     }
@@ -70,8 +81,8 @@ public class RankPanel extends JPanel {
         g.setColor(new Color(0x4007A1));
         g.setFont(new Font("微软雅黑", Font.BOLD, 20));
         for(int i = 0; i < rank.length; i++){
-            g.drawString(i+1+" ", 50, 150+i*40);
-            g.drawString(currentModel, 350, 150+i*40);
+            g.drawString(i+1+" ", 60, 150+i*40);
+            g.drawString(fomateTime(rankTime[i]), 330, 150+i*40);
             g.drawString(rank[i]+"", 600, 150+i*40);
         }
     }
@@ -79,29 +90,33 @@ public class RankPanel extends JPanel {
     private void DrawTitle(Graphics g){
         g.setColor(new Color(0x0D5302));
         g.setFont(new Font("微软雅黑", Font.BOLD, 40));
-        g.drawString("Ranking List", 250, 40);
+        g.drawString(MenuPanel.getState()+" Ranking List", 200, 40);
         g.setColor(new Color(0xFAE03C));
         g.setFont(new Font("微软雅黑", Font.BOLD, 20));
         g.drawString("Ranking", 50, 100);
-        g.drawString("model", 350, 100);
+        g.drawString("EndedTime", 350, 100);
         g.drawString("Score", 600, 100);
     }
     public static void updateRank(int score, String model){
         if(model.equals("normal")){
-            insertScore(normalRank,score);
+            insertScore(normalRank,score,normalTime);
         }else if(model.equals("hard")){
-            insertScore(hardRank,score);
+            insertScore(hardRank,score,hardTime);
         }else if(model.equals("crazy")){
-            insertScore(crazyRank,score);
+            insertScore(crazyRank,score,crazyTime);
         }
         saveRankings();
     }
-    private static void insertScore(int[] rank,int score){
+    private static void insertScore(int[] rank,int score,LocalDateTime[] timeArray){
         for(int i = 0; i < rank.length; i++){
             if(score > rank[i]){
                 for(int j = rank.length-1; j > i; j--){
                     rank[j] = rank[j-1];
                 }
+                for(int j = timeArray.length-1; j > i; j--){
+                    timeArray[j] = timeArray[j-1];
+                }
+                timeArray[i] = LocalDateTime.now();
                 rank[i] = score;
                 break;
             }
@@ -116,21 +131,42 @@ public class RankPanel extends JPanel {
             fis.close();
 
             for (int i = 0; i < 10; i++) {
-                String key = "normal" + i;
-                if (props.containsKey(key)) {
-                    normalRank[i] = Integer.parseInt(props.getProperty(key, "0"));
+                String scorekey = "normal" + i + "_score";
+                String timekey = "normal" + i + "_time";
+                if (props.containsKey(scorekey)) {
+                    normalRank[i] = Integer.parseInt(props.getProperty(scorekey, "0"));
+                }
+                if (props.containsKey(timekey)) {
+                    String timeStr = props.getProperty(timekey, "");
+                    if (!timeStr.isEmpty()) {
+                        normalTime[i] = LocalDateTime.parse(timeStr, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+                    }
                 }
             }
             for (int i = 0; i < 10; i++) {
-                String key = "hard" + i;
-                if (props.containsKey(key)) {
-                    hardRank[i] = Integer.parseInt(props.getProperty(key, "0"));
+                String scorekey = "normal" + i + "_score";
+                String timekey = "normal" + i + "_time";
+                if (props.containsKey(scorekey)) {
+                    hardRank[i] = Integer.parseInt(props.getProperty(scorekey, "0"));
+                }
+                if (props.containsKey(timekey)) {
+                    String timeStr = props.getProperty(timekey, "");
+                    if (!timeStr.isEmpty()) {
+                        hardTime[i] = LocalDateTime.parse(timeStr, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+                    }
                 }
             }
             for (int i = 0; i < 10; i++) {
-                String key = "crazy" + i;
-                if (props.containsKey(key)) {
-                    crazyRank[i] = Integer.parseInt(props.getProperty(key, "0"));
+                String scorekey = "normal" + i + "_score";
+                String timekey = "normal" + i + "_time";
+                if (props.containsKey(scorekey)) {
+                    crazyRank[i] = Integer.parseInt(props.getProperty(scorekey, "0"));
+                }
+                if (props.containsKey(timekey)) {
+                    String timeStr = props.getProperty(timekey, "");
+                    if (!timeStr.isEmpty()) {
+                        crazyTime[i] = LocalDateTime.parse(timeStr, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+                    }
                 }
             }
         } catch (FileNotFoundException e) {
@@ -145,13 +181,16 @@ public class RankPanel extends JPanel {
             Properties props = new Properties();
             
             for (int i = 0; i < 10; i++) {
-                props.setProperty("normal" + i, String.valueOf(normalRank[i]));
+                props.setProperty("normal" + i + "_score", String.valueOf(normalRank[i]));
+                props.setProperty("normal" + i + "_time",normalTime[i] != null?normalTime[i].toString():"");
             }
             for (int i = 0; i < 10; i++) {
-                props.setProperty("hard" + i, String.valueOf(hardRank[i]));
+                props.setProperty("hard" + i + "_score", String.valueOf(hardRank[i]));
+                props.setProperty("hard" + i + "_time",hardTime[i] != null?hardTime[i].toString():"");
             }
             for (int i = 0; i < 10; i++) {
-                props.setProperty("crazy" + i, String.valueOf(crazyRank[i]));
+                props.setProperty("crazy" + i + "_score", String.valueOf(crazyRank[i]));
+                props.setProperty("crazy" + i + "_time",crazyTime[i] != null?crazyTime[i].toString():"");
             }
 
             FileOutputStream fos = new FileOutputStream(RANK_FILE);
@@ -160,5 +199,11 @@ public class RankPanel extends JPanel {
         } catch (IOException e) {
             System.err.println("保存排行榜文件失败: " + e.getMessage());
         }
+    }
+    private static String fomateTime(LocalDateTime  time){
+        if(time == null){
+            return "未记录";
+        }
+        return time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
     }
 }
