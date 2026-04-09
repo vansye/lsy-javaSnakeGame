@@ -1,154 +1,179 @@
 package com.SnakeGame.game;
+
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
 import java.awt.event.MouseAdapter;
-import java.awt.Graphics;
+import java.awt.event.MouseEvent;
 
 public class MenuPanel extends JPanel {
     private static String state = "normal";
-    private static boolean isStart = false;
-    private static boolean rankingMode = false;
-    JButton normalButton = new JButton("Normal Model");
-    JButton hardButton = new JButton("Hard Model");
-    JButton crazyButton = new JButton("Crazy Model");
-    static JButton rankingButton = new JButton("Ranking List");
-    //JButton startButton = new JButton("Start Game");
+    JButton normalButton = new JButton("普通模式");
+    JButton hardButton = new JButton("困难模式");
+    JButton crazyButton = new JButton("狂暴模式");
+    static JButton rankingButton = new JButton("排行榜");
+    JButton settingButton = new JButton("⚙");
+    private static final Color HERO_FILL = new Color(255, 255, 255, 170);
+    private static final Color HERO_BORDER = new Color(0xA8D8FF);
 
     public MenuPanel() {
-            setupProperties();
-            addButtons();
-            setAddMouseListener();
+        setupProperties();
+        addButtons();
+        setAddMouseListener();
     }
-     private void setupProperties() {
+
+    private void setupProperties() {
         this.setLayout(null);
-        this.setBackground(new Color(0x0D5302));
-        this.setVisible( true);
+        this.setBackground(new Color(0xE8F7FF));
+        this.setVisible(true);
         this.setFocusable(true);
     }
 
-       private void addButtons() {
-        normalButton.setBounds(300, 100, 200, 50);
-        hardButton.setBounds(300, 200, 200, 50);
-        crazyButton.setBounds(300, 300, 200, 50);
-        rankingButton.setBounds(300, 400, 200, 50);
-        //startButton.setBounds(300, 500, 200, 50);
-        normalButton.setForeground(new Color(0x31A6C1));
-        hardButton.setForeground(new Color(0xAA0417));
-        crazyButton.setForeground(new Color(0xF421D1));
-        rankingButton.setForeground(new Color(0x19C194));
-        normalButton.setFont( new Font("微软雅黑", Font.BOLD, 20));
-        hardButton.setFont( new Font("微软雅黑", Font.BOLD, 20));
-        crazyButton.setFont( new Font("微软雅黑", Font.BOLD, 20));
-        rankingButton.setFont( new Font("微软雅黑", Font.BOLD, 20));
-        //startButton.setForeground(new Color(0xE6DB0A));
-        setButtonProperties(normalButton);
-        setButtonProperties(hardButton);
-        setButtonProperties(crazyButton);
-        setButtonProperties(rankingButton);
-        //setButtonProperties(startButton);
+    private void addButtons() {
+        normalButton.setBounds(300, 140, 220, 56);
+        hardButton.setBounds(300, 230, 220, 56);
+        crazyButton.setBounds(300, 320, 220, 56);
+        rankingButton.setBounds(300, 410, 220, 56);
+        settingButton.setBounds(764, 12, 36, 36);
+
+        UIFactory.styleMainButton(normalButton, new Color(0x58C6A9), Color.WHITE);
+        UIFactory.styleMainButton(hardButton, new Color(0xEA8A72), Color.WHITE);
+        UIFactory.styleMainButton(crazyButton, new Color(0xA682F0), Color.WHITE);
+        UIFactory.styleMainButton(rankingButton, new Color(0xF0B868), Color.WHITE);
+        UIFactory.styleIconButton(settingButton, new Color(0x4F8FDB), Color.WHITE);
+
         add(normalButton);
         add(hardButton);
         add(crazyButton);
         add(rankingButton);
-        //add(startButton);
+        add(settingButton);
     }
 
     private void setAddMouseListener() {
         normalButton.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (rankingMode) {
-                    state = "normal";
-                    RankPanel.showRank(state);
-                    Main.turnPage("rank");
-                } else {
-                    state = "normal";
-                    GamePanel.setSpeed(250);
-                    Food.setSpeedChangeRate(0);
-                    Main.turnPage("game");
-                }
+                // 进入游戏前先写入当前模式参数，保证 GamePanel 初始化一致
+                state = "normal";
+                applyModeSetting(state);
+                Main.turnPage("game");
                 repaint();
             }
         });
         hardButton.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (rankingMode) {
-                    state = "hard";
-                    RankPanel.showRank(state);
-                    Main.turnPage("rank");
-                } else {
-                    state = "hard";
-                    Food.setSpeedChangeRate(0);
-                    GamePanel.setSpeed(100);
-                    Main.turnPage("game");
-                }
+                state = "hard";
+                applyModeSetting(state);
+                Main.turnPage("game");
                 repaint();
             }
         });
         crazyButton.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (rankingMode) {
-                    state = "crazy";
-                    RankPanel.showRank(state);
-                    Main.turnPage("rank");
-                } else {
-                    state = "crazy";
-                    Food.setSpeedChangeRate(10);
-                    GamePanel.setSpeed(250);
-                    Main.turnPage("game");
-                }
+                state = "crazy";
+                applyModeSetting(state);
+                Main.turnPage("game");
                 repaint();
             }
         });
         rankingButton.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                rankingButton.setVisible(false);
-                rankingMode = true;
-                state = "rankingList";
-                isStart = true;
+                // 主菜单点击排行榜默认展示普通模式，可在排行榜页底部切换
+                RankPanel.showRank("normal");
+                Main.turnPage("rank");
                 repaint();
             }
         });
+
+        settingButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                Main.turnPage("setting");
+            }
+        });
     }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        try{
+        try {
             drawBackGround(g);
             setMyLabel(g);
-    } catch (Exception e) {
+            drawGuideText(g);
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
-    private void setButtonProperties(JButton button) {
-        button.setBackground(new Color(0xCAE8F1));
 
+    private void drawGuideText(Graphics g) {
+        Graphics2D g2d = (Graphics2D) g.create();
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        UIFactory.drawRoundedPanel(g2d, 80, 606, 623, 48, 16, new Color(255, 255, 255, 165), new Color(0xA9D4EF));
+        g2d.setColor(new Color(0x2E5D83));
+        g2d.setFont(new Font("幼圆", Font.BOLD, 16));
+        g2d.drawString("游戏指南:方向键/WASD 控制移动，Q 加速（5秒），F 金身（2秒），空格 开始/暂停", 85, 635);
+        g2d.dispose();
     }
+
     private void setMyLabel(Graphics g) {
-        g.setColor(new Color(4, 34, 106));
-        g.setFont(new Font("微软雅黑", Font.BOLD, 40));
-        g.drawString("Welcome to MySnakeGame By Vansye", 20, 40);
+        Graphics2D g2d = (Graphics2D) g.create();
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        UIFactory.drawRoundedPanel(g2d, 110, 16, 590, 72, 28, HERO_FILL, HERO_BORDER);
+        UIFactory.drawCenteredTitle(
+                g2d,
+                "My SnakeGame By Vansye",
+                405,
+                62,
+                new Font("幼圆", Font.BOLD, 40),
+                new Color(0x2A4A75),
+                new Color(255, 255, 255, 190)
+        );
+        g2d.dispose();
     }
+
     public static String getState() {
         return MenuPanel.state;
     }
 
-    public static void resetRankingMode() {
-        rankingMode = false;
-    }
+//    public static void resetRankingMode() {
+//
+//    }
 
     public static void resetMenu() {
-        rankingMode = false;
         rankingButton.setVisible(true);
     }
-    private void drawBackGround(Graphics g) {
-        setBackground(new Color(0xE9FBE3));
-       Images.background.paintIcon(this, g, 0, 70);
 
+    private void drawBackGround(Graphics g) {
+        Graphics2D g2d = (Graphics2D) g.create();
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        UIFactory.paintSoftGradient(g2d, getWidth(), getHeight(), new Color(0xECFAFF), new Color(0xD4F5E9));
+
+        g2d.setColor(new Color(255, 255, 255, 95));
+        g2d.fillOval(40, 90, 220, 120);
+        g2d.fillOval(560, 86, 190, 108);
+        g2d.fillOval(250, 520, 320, 92);
+
+        if (Images.background != null && Images.background.getIconWidth() > 0) {
+            Composite oldComposite = g2d.getComposite();
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.55f));
+            Images.background.paintIcon(this, g2d, 0, 90);
+            g2d.setComposite(oldComposite);
+        }
+        g2d.dispose();
+    }
+
+    private void applyModeSetting(String mode) {
+        // 同步写入 GamePanel/Food/Obstacle 的运行参数，避免跨页面参数不一致
+        GamePanel.setGameMode(mode);
+        GameConfig.setCurrentMode(mode);
+        GameConfig.ModeSetting setting = GameConfig.getModeSetting(mode);
+        GamePanel.setSpeed(setting.getStartSpeed());
+        Food.setSpeedChangeRate(setting.getSpeedChangeRate());
+        GamePanel.setTimedMode(setting.isTimedMode());
+        GamePanel.setTimeLimit(setting.getTimeLimitSec());
+        Obstacle.init(setting.getObstacleCount());
     }
 
 }

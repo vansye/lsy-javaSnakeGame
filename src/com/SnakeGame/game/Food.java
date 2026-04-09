@@ -1,7 +1,6 @@
 package com.SnakeGame.game;
 
 import java.util.Random;
-import java.util.Timer;
 
 /**
  * 食物类 - 管理食物的位置生成和碰撞检测
@@ -35,7 +34,6 @@ public class Food {
             GamePanel.setScore(GamePanel.getScore() + 10);
             GamePanel.setSpeed(GamePanel.getSpeed() - speedChangeRate);
             GamePanel.setSpeed(Math.max(GamePanel.getSpeed(), 30));
-            GamePanel.timer.setDelay(GamePanel.getSpeed());
             create();
         }
     }
@@ -46,6 +44,10 @@ public class Food {
             if(x == Snake.skx[i] && y == Snake.sky[i]){
                 return false;
             }
+        }
+        // 食物不能刷在障碍物上，否则会出现“看得到吃不到”的无效点位。
+        if (Obstacle.contains(x, y)) {
+            return false;
         }
         return true;
     }

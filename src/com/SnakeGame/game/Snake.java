@@ -9,6 +9,7 @@ public class Snake {
     public static int[] sky = new int[200];
     private static int length = 3;
     private static String direction = "R";
+    private static String bodyDirection = "R";
 
     public static void init() {
         length = 10;
@@ -18,6 +19,7 @@ public class Snake {
             sky[i] = 300;
         }
         direction = "R";
+        bodyDirection = "R";
     }
 
     static void touchJudge() {
@@ -27,28 +29,39 @@ public class Snake {
                 GamePanel.setIsStart(false);
             }
         }
+
+        if (Obstacle.contains(skx[0], sky[0]) && !GamePanel.isGoldActive()) {
+            GamePanel.setIsDead(true);
+            GamePanel.setIsStart(false);
+        }
     }
 
     public static void move() {
+        // 先让身体跟随头部历史位置，再更新头部坐标。
+
         for (int i = length - 1; i > 0; i--) {
             skx[i] = skx[i - 1];
             sky[i] = sky[i - 1];
+            bodyDirection = direction;
         }
+
+        switch (direction) {
+            case "R":
+                skx[0] += 25;
+                break;
+            case "L":
+                skx[0] -= 25;
+                break;
+            case "U":
+                sky[0] -= 25;
+                break;
+            case "D":
+                sky[0] += 25;
+                break;
+        }
+
         if (skx[0] <= 775 && skx[0] >= 0 && sky[0] <= 625 && sky[0] >= 50) {
-            switch (direction) {
-                case "R":
-                    skx[0] += 25;
-                    break;
-                case "L":
-                    skx[0] -= 25;
-                    break;
-                case "U":
-                    sky[0] -= 25;
-                    break;
-                case "D":
-                    sky[0] += 25;
-                    break;
-            }
+            // 头部移动完成后再统一做碰撞判定（自身 + 障碍）。
             touchJudge();
         } else {
             GamePanel.setIsDead(true);
@@ -62,25 +75,25 @@ public class Snake {
         switch (e.getKeyCode()) {
             case KeyEvent.VK_D:
             case KeyEvent.VK_RIGHT:
-                if (direction != null && !direction.equals("L")) {
+                if (direction != null && !direction.equals("L") && !bodyDirection.equals("L")) {
                     direction = "R";
                 }
                 break;
             case KeyEvent.VK_A:
             case KeyEvent.VK_LEFT:
-                if (direction != null && !direction.equals("R")) {
+                if (direction != null && !direction.equals("R") && !bodyDirection.equals("R")) {
                     direction = "L";
                 }
                 break;
             case KeyEvent.VK_W:
             case KeyEvent.VK_UP:
-                if (direction != null && !direction.equals("D")) {
+                if (direction != null && !direction.equals("D") && !bodyDirection.equals("D")) {
                     direction = "U";
                 }
                 break;
             case KeyEvent.VK_S:
             case KeyEvent.VK_DOWN:
-                if (direction != null && !direction.equals("U")) {
+                if (direction != null && !direction.equals("U") && !bodyDirection.equals("U")) {
                     direction = "D";
                 }
                 break;

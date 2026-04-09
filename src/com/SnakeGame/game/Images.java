@@ -17,24 +17,23 @@ public final class Images {
     }
     
     // 图像资源URL
-    public static final URL bodyURL = getResource("/images/body.png");
     public static final URL foodURL = getResource("/images/food.png");
-    public static final URL leftURL = getResource("/images/left.png");
-    public static final URL rightURL = getResource("/images/right.png");
-    public static final URL upURL = getResource("/images/up.png");
-    public static final URL downURL = getResource("/images/down.png");
     public static final URL titleURL = getResource("/images/title.jpg");
     public static final URL backgroundURL = getResource("/images/background.jpg");
     
     // 图像图标
-    public static final ImageIcon body = createImageIcon(bodyURL, "body");
+    public static ImageIcon body;
     public static final ImageIcon food = createImageIcon(foodURL, "food");
-    public static final ImageIcon left = createImageIcon(leftURL, "left");
-    public static final ImageIcon right = createImageIcon(rightURL, "right");
-    public static final ImageIcon up = createImageIcon(upURL, "up");
-    public static final ImageIcon down = createImageIcon(downURL, "down");
+    public static ImageIcon left;
+    public static ImageIcon right;
+    public static ImageIcon up;
+    public static ImageIcon down;
     public static final ImageIcon title = createImageIcon(titleURL, "title");
     public static final ImageIcon background = createImageIcon(backgroundURL, "background");
+
+    static {
+        loadSnakeSkin("classic");
+    }
     
 
     private static URL getResource(String path) {
@@ -55,8 +54,33 @@ public final class Images {
         return new ImageIcon(url);
     }
 
+    public static void loadSnakeSkin(String skinName) {
+        if (!loadOriginalSnakeSprites()) {
+            System.err.println("警告: 原始蛇图片加载失败");
+        }
+        GameConfig.setCurrentSnakeSkin("classic", false);
+    }
+
+    private static boolean loadOriginalSnakeSprites() {
+        URL bodyUrl = getResource("/images/body.png");
+        URL leftUrl = getResource("/images/left.png");
+        URL rightUrl = getResource("/images/right.png");
+        URL upUrl = getResource("/images/up.png");
+        URL downUrl = getResource("/images/down.png");
+        if (bodyUrl == null || leftUrl == null || rightUrl == null || upUrl == null || downUrl == null) {
+            return false;
+        }
+        body = createImageIcon(bodyUrl, "body");
+        left = createImageIcon(leftUrl, "left");
+        right = createImageIcon(rightUrl, "right");
+        up = createImageIcon(upUrl, "up");
+        down = createImageIcon(downUrl, "down");
+        return true;
+    }
+
 //      检查所有必需的图像资源是否都已成功加载
     public static boolean allResources() {
-        return body != null && food != null && left != null && up != null && down != null && title != null && background != null && bodyURL != null && foodURL != null && leftURL != null && rightURL != null && upURL != null && downURL != null && titleURL != null && backgroundURL != null;
+        return body != null && food != null && left != null && right != null && up != null && down != null
+                && title != null && background != null && foodURL != null && titleURL != null && backgroundURL != null;
     }
 }
