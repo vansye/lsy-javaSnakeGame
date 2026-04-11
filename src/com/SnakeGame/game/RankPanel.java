@@ -3,6 +3,8 @@ package com.SnakeGame.game;
 import javax.swing.*;
 import java.awt.*;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Properties;
@@ -29,7 +31,7 @@ public class RankPanel extends JPanel {
     private final JButton crazyButton = new JButton("狂暴");
     private final JButton menuButton = new JButton("返回菜单");
 
-    private static final String RANK_FILE = "rankings.dat";
+    private static final Path RANK_FILE = AppPaths.getRankingsPath();
     private static final Color CARD_FILL = new Color(255, 255, 255, 185);
     private static final Color CARD_BORDER = new Color(0x9CCEF5);
 
@@ -205,11 +207,16 @@ public class RankPanel extends JPanel {
     }
 
     private static void loadRankings() {
+        if (!Files.exists(RANK_FILE)) {
+            System.out.println("排行榜文件不存在，使用默认数据");
+            return;
+        }
+
         try {
             Properties props = new Properties();
-            FileInputStream fis = new FileInputStream(RANK_FILE);
-            props.load(fis);
-            fis.close();
+            try (InputStream fis = Files.newInputStream(RANK_FILE)) {
+                props.load(fis);
+            }
 
             for (int i = 0; i < 10; i++) {
                 String scorekey = "normal" + i + "_score";
@@ -256,8 +263,6 @@ public class RankPanel extends JPanel {
                 }
                 crazyDuration[i] = Integer.parseInt(props.getProperty(durationKey, "0"));
             }
-        } catch (FileNotFoundException e) {
-            System.out.println("排行榜文件不存在，使用默认数据");
         } catch (IOException e) {
             System.err.println("读取排行榜文件失败: " + e.getMessage());
         }
@@ -283,9 +288,7 @@ public class RankPanel extends JPanel {
                 props.setProperty("crazy" + i + "_duration", String.valueOf(crazyDuration[i]));
             }
 
-            FileOutputStream fos = new FileOutputStream(RANK_FILE);
-            props.store(fos, "Snake Game Rankings");
-            fos.close();
+            AppPaths.atomicStore(props, RANK_FILE, "Snake Game Rankings");
         } catch (IOException e) {
             System.err.println("保存排行榜文件失败: " + e.getMessage());
         }

@@ -7,6 +7,8 @@ import java.awt.event.KeyEvent;
 public class Snake {
     public static int[] skx = new int[200];
     public static int[] sky = new int[200];
+    private static int[] prevSkx = new int[200];
+    private static int[] prevSky = new int[200];
     private static int length = 3;
     private static String direction = "R";
     private static String bodyDirection = "R";
@@ -17,9 +19,17 @@ public class Snake {
         for (int i = 0; i < length; i++, k -= 25) {
             skx[i] = k;
             sky[i] = 300;
+            prevSkx[i] = k;
+            prevSky[i] = 300;
         }
         direction = "R";
         bodyDirection = "R";
+    }
+
+    private static void capturePreviousState() {
+        int copyLen = Math.max(1, Math.min(length, 200));
+        System.arraycopy(skx, 0, prevSkx, 0, copyLen);
+        System.arraycopy(sky, 0, prevSky, 0, copyLen);
     }
 
     static void touchJudge() {
@@ -38,6 +48,7 @@ public class Snake {
 
     public static void move() {
         // 先让身体跟随头部历史位置，再更新头部坐标。
+        capturePreviousState();
 
         for (int i = length - 1; i > 0; i--) {
             skx[i] = skx[i - 1];
@@ -106,6 +117,19 @@ public class Snake {
 
     public static void setLength(int newLength) {
         if (newLength > 0 && newLength < 200) {
+            // 新增段默认贴合尾部，避免新长度在渲染时从(0,0)突兀跳入。
+            if (newLength > length && length > 0) {
+                int tailX = skx[length - 1];
+                int tailY = sky[length - 1];
+                int prevTailX = prevSkx[length - 1];
+                int prevTailY = prevSky[length - 1];
+                for (int i = length; i < newLength; i++) {
+                    skx[i] = tailX;
+                    sky[i] = tailY;
+                    prevSkx[i] = prevTailX;
+                    prevSky[i] = prevTailY;
+                }
+            }
             length = newLength;
         }
     }
@@ -126,5 +150,21 @@ public class Snake {
                         newDirection.equals("U") || newDirection.equals("D"))) {
             direction = newDirection;
         }
+    }
+
+    public static int getRenderX(int index, float alpha) {
+        if (index < 0 || index >= length) {
+            return 0;
+        }
+        float t = Math.max(0f, Math.min(1f, alpha));
+        return Math.round(prevSkx[index] + (skx[index] - prevSkx[index]) * t);
+    }
+
+    public static int getRenderY(int index, float alpha) {
+        if (index < 0 || index >= length) {
+            return 0;
+        }
+        float t = Math.max(0f, Math.min(1f, alpha));
+        return Math.round(prevSky[index] + (sky[index] - prevSky[index]) * t);
     }
 }

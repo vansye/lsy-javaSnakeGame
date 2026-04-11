@@ -10,20 +10,30 @@ public class Main {
     private static String currentPage;
     private static String lastPage;
     public static void main(String[] args) {
+        try {
+            AppPaths.bootstrap();
+        } catch (IllegalStateException e) {
+            JOptionPane.showMessageDialog(null, "初始化存档目录失败：" + e.getMessage(), "启动失败", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
         // 创建游戏面板
 
         GamePanel gamePanel = new GamePanel();
         MenuPanel menuPanel = new MenuPanel();
         RankPanel rankPanel = new RankPanel();
+        GameIntroPanel gameIntroPanel = new GameIntroPanel();
         SettingsPanel settingsPanel = new SettingsPanel();
         String Pname = "menu";
         //String Pname = "game";
+        //String Pname = "intro";
         // 创建配置面板
         mainPanel.add(gamePanel, "game");
         mainPanel.add(menuPanel, "menu");
         mainPanel.add(rankPanel, "rank");
         mainPanel.add(settingsPanel, "setting");
+        mainPanel.add(gameIntroPanel, "intro");
+
         // 创建并配置窗口
         JFrame frame = new JFrame("Lsy的贪吃蛇游戏");
         frame.setSize(814, 685);
@@ -68,8 +78,13 @@ public class Main {
         }
 
         if ("setting".equals(name)) {
+            String preferredMode = "normal";
+            if ("game".equals(lastPage)) {
+                preferredMode = GamePanel.getCurrentGameMode();
+            }
             for (Component comp : mainPanel.getComponents()) {
                 if (comp instanceof SettingsPanel) {
+                    ((SettingsPanel) comp).onPageEnter(preferredMode);
                     comp.requestFocusInWindow();
                     break;
                 }

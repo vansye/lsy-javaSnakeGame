@@ -17,16 +17,20 @@ public class SettingsPanel extends JPanel {
     private final JTextField obstacleField = new JTextField();
     private final JButton boardColorButton = new JButton("选择棋盘颜色");
     private final JButton gridColorButton = new JButton("选择网格颜色");
+    private final JButton obstacleColorButton = new JButton("选择障碍颜色");
     // 复选框
     private final JCheckBox timedModeCheckBox = new JCheckBox("开启限时模式");
 
     private final JButton saveButton = new JButton("保存设置");
     private final JButton backButton = new JButton("<");
+    private final JPanel contentPanel = new JPanel(null);
+    private JScrollPane scrollPane;
     private static final Color CARD_FILL = new Color(255, 255, 255, 180);
     private static final Color CARD_BORDER = new Color(0x9CD0F5);
     private static final Color PREVIEW_DEFAULT_BG = new Color(0x7E95B8);
     private Color selectedBoardColor;
     private Color selectedGridColor;
+    private Color selectedObstacleColor;
 
     public SettingsPanel() {
         setupPanel();
@@ -39,60 +43,75 @@ public class SettingsPanel extends JPanel {
         setLayout(null);
         setFocusable(true);
         setBackground(new Color(0xEAF8FF));
+        contentPanel.setOpaque(false);
     }
 
     private void setupControls() {
         JLabel title = new JLabel("游戏设置");
-        title.setBounds(340, 28, 200, 40);
+        title.setBounds(286, 24, 200, 40);
         title.setFont(new Font("幼圆", Font.BOLD, 36));
         title.setForeground(new Color(0x1D4E89));
-        add(title);
+        contentPanel.add(title);
 
-        addLabel("模式：", 190, 108);
-        modeSelector.setBounds(300, 108, 260, 35);
+        addLabel("模式：", 130, 92);
+        modeSelector.setBounds(240, 92, 260, 35);
         modeSelector.setSelectedItem(GameConfig.getCurrentMode());
         UIFactory.styleComboBox(modeSelector);
-        add(modeSelector);
+        contentPanel.add(modeSelector);
 
-        addLabel("皮肤：", 190, 156);
-        skinSelector.setBounds(300, 156, 260, 35);
+        addLabel("皮肤：", 130, 140);
+        skinSelector.setBounds(240, 140, 260, 35);
         UIFactory.styleComboBox(skinSelector);
-        add(skinSelector);
+        contentPanel.add(skinSelector);
 
-        addLabel("棋盘颜色：", 170, 204);
-        setupButton(boardColorButton, 300, 204, new Color(0x3F89C9));
+        addLabel("棋盘颜色：", 110, 188);
+        setupButton(boardColorButton, 240, 188, new Color(0x3F89C9));
         boardColorButton.setSize(178, 35);
 
-        addLabel("网格颜色：", 170, 252);
-        setupButton(gridColorButton, 300, 252, new Color(0x4CA67E));
+        addLabel("网格颜色：", 110, 236);
+        setupButton(gridColorButton, 240, 236, new Color(0x4CA67E));
         gridColorButton.setSize(178, 35);
 
-        addLabel("初始速度(ms)：", 150, 300);
-        speedField.setBounds(300, 300, 260, 35);
+        addLabel("障碍颜色：", 110, 284);
+        setupButton(obstacleColorButton, 240, 284, new Color(0xB17A32));
+        obstacleColorButton.setSize(178, 35);
+
+        addLabel("初始速度ms：", 90, 332);
+        speedField.setBounds(240, 332, 260, 35);
         UIFactory.styleTextField(speedField);
-        add(speedField);
+        contentPanel.add(speedField);
 
-        addLabel("加速变化值：", 150, 348);
-        speedRateField.setBounds(300, 348, 260, 35);
+        addLabel("加速变化值：", 90, 380);
+        speedRateField.setBounds(240, 380, 260, 35);
         UIFactory.styleTextField(speedRateField);
-        add(speedRateField);
+        contentPanel.add(speedRateField);
 
-        addLabel("限时秒数：", 170, 396);
-        timeField.setBounds(300, 396, 260, 35);
+        addLabel("限时秒数：", 110, 428);
+        timeField.setBounds(240, 428, 260, 35);
         UIFactory.styleTextField(timeField);
-        add(timeField);
+        contentPanel.add(timeField);
 
-        addLabel("障碍数量：", 170, 444);
-        obstacleField.setBounds(300, 444, 260, 35);
+        addLabel("障碍数量：", 110, 476);
+        obstacleField.setBounds(240, 476, 260, 35);
         UIFactory.styleTextField(obstacleField);
-        add(obstacleField);
+        contentPanel.add(obstacleField);
 
-        timedModeCheckBox.setBounds(300, 492, 260, 35);
+        timedModeCheckBox.setBounds(240, 524, 260, 35);
         UIFactory.styleCheckBox(timedModeCheckBox, CARD_FILL);
-        add(timedModeCheckBox);
+        contentPanel.add(timedModeCheckBox);
 
-        setupButton(saveButton, 318, 536, new Color(0x2D8C4B));
+        setupButton(saveButton, 258, 584, new Color(0x2D8C4B));
         setupIconButton(backButton, 12, 12, new Color(0x4A88D0));
+
+        contentPanel.setPreferredSize(new Dimension(640, 680));
+        scrollPane = new JScrollPane(contentPanel);
+        scrollPane.setBounds(65, 78, 670, 560);
+        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(0x9CD0F5), 0, true));
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.setOpaque(false);
+        scrollPane.getViewport().setOpaque(false);
+
+        add(scrollPane);
 
         refreshModeFields();
     }
@@ -102,13 +121,13 @@ public class SettingsPanel extends JPanel {
         label.setBounds(x, y, 140, 35);
         label.setFont(new Font("幼圆", Font.BOLD, 20));
         label.setForeground(new Color(0x1C3A64));
-        add(label);
+        contentPanel.add(label);
     }
 
     private void setupButton(JButton button, int x, int y, Color bgColor) {
         button.setBounds(x, y, 170, 44);
         UIFactory.styleMainButton(button, bgColor, Color.WHITE);
-        add(button);
+        contentPanel.add(button);
     }
 
     private void setupIconButton(JButton button, int x, int y, Color bgColor) {
@@ -149,6 +168,17 @@ public class SettingsPanel extends JPanel {
             }
         });
 
+        obstacleColorButton.addActionListener(e -> {
+            if (!"custom".equals(skinSelector.getSelectedItem())) {
+                return;
+            }
+            Color chosen = JColorChooser.showDialog(this, "选择障碍颜色", selectedObstacleColor);
+            if (chosen != null) {
+                selectedObstacleColor = chosen;
+                refreshColorButtonView(obstacleColorButton, chosen);
+            }
+        });
+
         saveButton.addActionListener(e -> {
             // 先保存当前模式参数，再保存全局皮肤，避免跨模式覆盖
             saveCurrentModeSetting();
@@ -161,6 +191,7 @@ public class SettingsPanel extends JPanel {
             if ("custom".equals(theme)) {
                 GameConfig.setCustomBoardColor(mode, selectedBoardColor);
                 GameConfig.setCustomGridColor(mode, selectedGridColor);
+                GameConfig.setCustomObstacleColor(mode, selectedObstacleColor);
             }
 
             GameConfig.saveUserPreferences();
@@ -185,6 +216,7 @@ public class SettingsPanel extends JPanel {
         skinSelector.setSelectedItem(GameConfig.getSkinForMode(mode));
         selectedBoardColor = GameConfig.getCustomBoardColor(mode);
         selectedGridColor = GameConfig.getCustomGridColor(mode);
+        selectedObstacleColor = GameConfig.getCustomObstacleColor(mode);
         updateCustomColorControls();
     }
 
@@ -210,9 +242,28 @@ public class SettingsPanel extends JPanel {
         boolean isCustom = "custom".equals(skinSelector.getSelectedItem());
         boardColorButton.setEnabled(isCustom);
         gridColorButton.setEnabled(isCustom);
+        obstacleColorButton.setEnabled(isCustom);
 
         refreshColorButtonView(boardColorButton, isCustom ? selectedBoardColor : null);
         refreshColorButtonView(gridColorButton, isCustom ? selectedGridColor : null);
+        refreshColorButtonView(obstacleColorButton, isCustom ? selectedObstacleColor : null);
+    }
+
+    public void onPageEnter(String preferredMode) {
+        String mode = normalizeMode(preferredMode);
+        modeSelector.setSelectedItem(mode);
+        GameConfig.setCurrentMode(mode);
+        refreshModeFields();
+        if (scrollPane != null) {
+            scrollPane.getVerticalScrollBar().setValue(0);
+        }
+    }
+
+    private String normalizeMode(String mode) {
+        if ("hard".equals(mode) || "crazy".equals(mode)) {
+            return mode;
+        }
+        return "normal";
     }
 
     private void refreshColorButtonView(JButton button, Color color) {
@@ -234,8 +285,7 @@ public class SettingsPanel extends JPanel {
         Graphics2D g2d = (Graphics2D) g.create();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         UIFactory.paintSoftGradient(g2d, getWidth(), getHeight(), new Color(0xEEFAFF), new Color(0xDFF5EC));
-        UIFactory.drawRoundedPanel(g2d, 120, 82, 560, 518, 26, CARD_FILL, CARD_BORDER);
-        UIFactory.drawRoundedPanel(g2d, 280, 530, 250, 56, 24, new Color(255, 255, 255, 190), CARD_BORDER);
+        UIFactory.drawRoundedPanel(g2d, 74, 64, 664, 584, 26, CARD_FILL, CARD_BORDER);
         g2d.dispose();
     }
 }

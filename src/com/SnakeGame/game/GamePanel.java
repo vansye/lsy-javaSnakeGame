@@ -6,6 +6,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 //     游戏主面板类 - 负责游戏的主要逻辑和渲染
 public class GamePanel extends JPanel {
@@ -21,21 +23,25 @@ public class GamePanel extends JPanel {
     private static boolean scoreUpdate = false;
     private static String gameMode = "normal";
 
-    private static final int SPEED_BOOST_DELTA_MS = 20; // 加速模式每次降低的延迟（ms）
+    private static final int SPEED_BOOST_DELTA_MS = 50; // 加速模式每次降低的延迟（ms）
     private static final long SPEED_BOOST_MAX_HOLD_MS = 5000L;
-    private static final long SPEED_BOOST_COOLDOWN_MS = 5000L;
+    private static final long SPEED_BOOST_COOLDOWN_MS = 3000L;
     private static final long GOLD_MAX_HOLD_MS = 2000L;
-    private static final long GOLD_COOLDOWN_MS = 10000L;
+    private static final long GOLD_COOLDOWN_MS = 5000L;
     private static final int FRAME_DELAY_MS = 16;
 
     private static boolean speedBoostHolding = false;
     private static long speedBoostPressStart = 0L;
     private static long speedBoostCooldownUntil = 0L;
+    private static boolean speedBoostKeyPressed = false;
+    private static boolean speedBoostMousePressed = false;
 
     private static boolean goldHolding = false;
     private static boolean goldActive = false;
     private static long goldPressStart = 0L;
     private static long goldCooldownUntil = 0L;
+    private static boolean goldKeyPressed = false;
+    private static boolean goldMousePressed = false;
 
     private static final Color SPEED_SKILL_COLOR = new Color(0xEFA14E);
     private static final Color GOLD_SKILL_COLOR = new Color(0x6DBE4A);
@@ -44,6 +50,7 @@ public class GamePanel extends JPanel {
     private long lastSecondMark = 0;
     private long lastFrameMark = 0;
     private long logicAccumulatorMs = 0;
+    private float renderAlpha = 0f;
 
     private final JButton backButton = new JButton("<");
     private final JButton settingButton = new JButton("⚙");
@@ -107,6 +114,10 @@ public class GamePanel extends JPanel {
         }
     }
 
+    public static String getCurrentGameMode() {
+        return gameMode;
+    }
+
     public static boolean isGoldActive() {
         return goldActive;
     }
@@ -127,10 +138,14 @@ public class GamePanel extends JPanel {
         speedBoostHolding = false;
         speedBoostPressStart = 0L;
         speedBoostCooldownUntil = 0L;
+        speedBoostKeyPressed = false;
+        speedBoostMousePressed = false;
         goldHolding = false;
         goldActive = false;
         goldPressStart = 0L;
         goldCooldownUntil = 0L;
+        goldKeyPressed = false;
+        goldMousePressed = false;
         Food.setSpeedChangeRate(setting.getSpeedChangeRate());
         Obstacle.init(setting.getObstacleCount());
         if (timer != null) {
@@ -159,6 +174,9 @@ public class GamePanel extends JPanel {
         // 添加键盘监听器
         addKeyboardListener();
 
+        // 添加鼠标监听器
+        addMouseControlListener();
+
         // 初始化定时器
         initializeTimer();
 
@@ -181,13 +199,18 @@ public class GamePanel extends JPanel {
         elapsedTime = 0;
         scoreUpdate = false;
         lastSecondMark = System.currentTimeMillis();
+        renderAlpha = 0f;
         speedBoostHolding = false;
         speedBoostPressStart = 0L;
         speedBoostCooldownUntil = 0L;
+        speedBoostKeyPressed = false;
+        speedBoostMousePressed = false;
         goldHolding = false;
         goldActive = false;
         goldPressStart = 0L;
         goldCooldownUntil = 0L;
+        goldKeyPressed = false;
+        goldMousePressed = false;
     }
 
     private void applyModeSetting() {
@@ -282,6 +305,40 @@ public class GamePanel extends JPanel {
         });
     }
 
+    private void addMouseControlListener() {
+        this.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (e == null || !isStart || isDead || !isInGameBoard(e.getX(), e.getY())) {
+                    return;
+                }
+                requestFocusInWindow();
+                if (SwingUtilities.isRightMouseButton(e)) {
+                    handleSkillMousePressed(MouseEvent.BUTTON3);
+                } else if (SwingUtilities.isLeftMouseButton(e)) {
+                    handleSkillMousePressed(MouseEvent.BUTTON1);
+                }
+                repaint();
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                if (e == null) return;
+
+                if (SwingUtilities.isRightMouseButton(e)) {
+                    handleSkillMouseReleased(MouseEvent.BUTTON3);
+                } else if (SwingUtilities.isLeftMouseButton(e)) {
+                    handleSkillMouseReleased(MouseEvent.BUTTON1);
+                }
+                repaint();
+            }
+        });
+    }
+
+    private boolean isInGameBoard(int x, int y) {
+        return x >= 0 && x <= 800 && y >= 50 && y <= 650;
+    }
+
 //    处理空格键事件
     private void handleSpaceKey() {
         if (isDead) {
@@ -295,9 +352,13 @@ public class GamePanel extends JPanel {
         } else {
             speedBoostHolding = false;
             speedBoostPressStart = 0L;
+            speedBoostKeyPressed = false;
+            speedBoostMousePressed = false;
             goldHolding = false;
             goldActive = false;
             goldPressStart = 0L;
+            goldKeyPressed = false;
+            goldMousePressed = false;
             if (timer != null) {
                 timer.setDelay(FRAME_DELAY_MS);
             }
@@ -311,38 +372,122 @@ public class GamePanel extends JPanel {
         }
 
         long now = System.currentTimeMillis();
-        if (keyCode == KeyEvent.VK_Q && now >= speedBoostCooldownUntil) {
-            if (!speedBoostHolding) {
-                speedBoostHolding = true;
-                speedBoostPressStart = now;
-            }
+        if (keyCode == KeyEvent.VK_Q) {
+            pressSpeedBoostSource(false, now);
             return;
         }
 
-        if (keyCode == KeyEvent.VK_F && now >= goldCooldownUntil) {
-            if (!goldHolding) {
-                goldHolding = true;
-                goldActive = true;
-                goldPressStart = now;
-            }
+        if (keyCode == KeyEvent.VK_F) {
+            pressGoldSource(false, now);
         }
     }
 
     private void handleSkillKeyReleased(int keyCode) {
         long now = System.currentTimeMillis();
-        if (keyCode == KeyEvent.VK_Q && speedBoostHolding) {
-            speedBoostHolding = false;
-            speedBoostPressStart = 0L;
-            speedBoostCooldownUntil = now + SPEED_BOOST_COOLDOWN_MS;
+        if (keyCode == KeyEvent.VK_Q) {
+            releaseSpeedBoostSource(false, now);
             return;
         }
 
-        if (keyCode == KeyEvent.VK_F && goldHolding) {
-            goldHolding = false;
-            goldActive = false;
-            goldPressStart = 0L;
-            goldCooldownUntil = now + GOLD_COOLDOWN_MS;
+        if (keyCode == KeyEvent.VK_F) {
+            releaseGoldSource(false, now);
         }
+    }
+
+    private void handleSkillMousePressed(int button) {
+        if (!isStart || isDead) {
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        if (button == MouseEvent.BUTTON3) {
+            pressSpeedBoostSource(true, now);
+            return;
+        }
+
+        if (button == MouseEvent.BUTTON1) {
+            pressGoldSource(true, now);
+        }
+    }
+
+    private void handleSkillMouseReleased(int button) {
+        long now = System.currentTimeMillis();
+        if (button == MouseEvent.BUTTON3) {
+            releaseSpeedBoostSource(true, now);
+            return;
+        }
+
+        if (button == MouseEvent.BUTTON1) {
+            releaseGoldSource(true, now);
+        }
+    }
+
+    private void pressSpeedBoostSource(boolean fromMouse, long now) {
+        if (fromMouse) {
+            speedBoostMousePressed = true;
+        } else {
+            speedBoostKeyPressed = true;
+        }
+
+        if (!speedBoostHolding && now >= speedBoostCooldownUntil) {
+            speedBoostHolding = true;
+            speedBoostPressStart = now;
+        }
+    }
+
+    private void releaseSpeedBoostSource(boolean fromMouse, long now) {
+        if (fromMouse) {
+            speedBoostMousePressed = false;
+        } else {
+            speedBoostKeyPressed = false;
+        }
+
+        if (!speedBoostHolding) {
+            return;
+        }
+
+        if (speedBoostKeyPressed || speedBoostMousePressed) {
+            return;
+        }
+
+        speedBoostHolding = false;
+        speedBoostPressStart = 0L;
+        speedBoostCooldownUntil = now + SPEED_BOOST_COOLDOWN_MS;
+    }
+
+    private void pressGoldSource(boolean fromMouse, long now) {
+        if (fromMouse) {
+            goldMousePressed = true;
+        } else {
+            goldKeyPressed = true;
+        }
+
+        if (!goldHolding && now >= goldCooldownUntil) {
+            goldHolding = true;
+            goldActive = true;
+            goldPressStart = now;
+        }
+    }
+
+    private void releaseGoldSource(boolean fromMouse, long now) {
+        if (fromMouse) {
+            goldMousePressed = false;
+        } else {
+            goldKeyPressed = false;
+        }
+
+        if (!goldHolding) {
+            return;
+        }
+
+        if (goldKeyPressed || goldMousePressed) {
+            return;
+        }
+
+        goldHolding = false;
+        goldActive = false;
+        goldPressStart = 0L;
+        goldCooldownUntil = now + GOLD_COOLDOWN_MS;
     }
 
     private void updateSkillStates() {
@@ -352,6 +497,8 @@ public class GamePanel extends JPanel {
             speedBoostHolding = false;
             speedBoostPressStart = 0L;
             speedBoostCooldownUntil = now + SPEED_BOOST_COOLDOWN_MS;
+            speedBoostKeyPressed = false;
+            speedBoostMousePressed = false;
         }
 
         if (goldHolding && goldPressStart > 0L && now - goldPressStart >= GOLD_MAX_HOLD_MS) {
@@ -359,6 +506,8 @@ public class GamePanel extends JPanel {
             goldActive = false;
             goldPressStart = 0L;
             goldCooldownUntil = now + GOLD_COOLDOWN_MS;
+            goldKeyPressed = false;
+            goldMousePressed = false;
         }
 
     }
@@ -382,11 +531,16 @@ public class GamePanel extends JPanel {
         speedBoostHolding = false;
         speedBoostPressStart = 0L;
         speedBoostCooldownUntil = 0L;
+        speedBoostKeyPressed = false;
+        speedBoostMousePressed = false;
         goldHolding = false;
         goldActive = false;
         goldPressStart = 0L;
         goldCooldownUntil = 0L;
+        goldKeyPressed = false;
+        goldMousePressed = false;
         logicAccumulatorMs = 0;
+        renderAlpha = 0f;
         lastFrameMark = System.currentTimeMillis();
         if (timer != null) {
             timer.setDelay(FRAME_DELAY_MS);
@@ -418,6 +572,7 @@ public class GamePanel extends JPanel {
                                 Food.eat();
                                 logicAccumulatorMs -= logicDelay;
                             }
+                            renderAlpha = Math.max(0f, Math.min(1f, logicAccumulatorMs / (float) Math.max(1, logicDelay)));
                             updateGameTime();
                             if (isDead) {
                                 endGame();
@@ -430,6 +585,7 @@ public class GamePanel extends JPanel {
                         }
                     } else {
                         logicAccumulatorMs = 0L;
+                        renderAlpha = 0f;
                     }
                     repaint();
                 }
@@ -512,19 +668,20 @@ public class GamePanel extends JPanel {
     private void drawSnake(Graphics g) {
         int snakeLength = Snake.getLength();
         if (snakeLength <= 0) return;
+        float alpha = (isStart && !isDead) ? renderAlpha : 1f;
 
         // 绘制蛇头
-        drawSnakeHead(g);
+        drawSnakeHead(g, alpha);
 
         // 绘制蛇身
-        drawSnakeBody(g, snakeLength);
+        drawSnakeBody(g, snakeLength, alpha);
     }
 
 //    绘制蛇头
-    private void drawSnakeHead(Graphics g) {
+    private void drawSnakeHead(Graphics g, float alpha) {
         String direction = Snake.getDirection();
-        int headX = Snake.skx[0];
-        int headY = Snake.sky[0];
+        int headX = Snake.getRenderX(0, alpha);
+        int headY = Snake.getRenderY(0, alpha);
 
         ImageIcon headIcon = switch (direction) {
             case "R" -> Images.right;
@@ -538,11 +695,11 @@ public class GamePanel extends JPanel {
     }
 
 //     绘制蛇身
-    private void drawSnakeBody(Graphics g, int snakeLength) {
+    private void drawSnakeBody(Graphics g, int snakeLength, float alpha) {
         for (int i = 1; i < snakeLength && i < 200; i++) {
-            int bodyX = Snake.skx[i];
-            int bodyY = Snake.sky[i];
-            if (bodyX >= 0 && bodyX <= 775 && bodyY >= 50 && bodyY <= 625) {
+            int bodyX = Snake.getRenderX(i, alpha);
+            int bodyY = Snake.getRenderY(i, alpha);
+            if (bodyX >= -25 && bodyX <= 800 && bodyY >= 25 && bodyY <= 650) {
                 Images.body.paintIcon(this, g, bodyX, bodyY);
             }
         }
@@ -578,7 +735,7 @@ public class GamePanel extends JPanel {
                 g2d,
                 x,
                 y,
-                'Q',
+                "Q/右",
                 speedBoostHolding,
                 speedBoostPressStart,
                 speedBoostCooldownUntil,
@@ -592,7 +749,7 @@ public class GamePanel extends JPanel {
                 g2d,
             x + 110,
                 y,
-                'F',
+                "F/左",
                 goldHolding,
                 goldPressStart,
                 goldCooldownUntil,
@@ -603,7 +760,7 @@ public class GamePanel extends JPanel {
         );
     }
 
-    private void drawSingleSkillIcon(Graphics2D g2d, int x, int y, char hotkey,
+    private void drawSingleSkillIcon(Graphics2D g2d, int x, int y, String hotkeyLabel,
                                      boolean active, long pressStart, long cooldownUntil,
                                      long maxHoldMs, Color activeColor, boolean lightning, long now) {
         Color stateColor = SKILL_READY_COLOR;
@@ -629,13 +786,14 @@ public class GamePanel extends JPanel {
 
         g2d.setFont(SKILL_HINT_FONT);
         g2d.setColor(new Color(0x2C567C));
-        g2d.drawString(String.valueOf(hotkey), x + 40, y + 14);
+        g2d.drawString(hotkeyLabel, x + 40, y + 14);
         if (!secondsHint.isEmpty()) {
+            int secondsX = x + 46 + g2d.getFontMetrics().stringWidth(hotkeyLabel);
             g2d.setColor(stateColor);
-            g2d.drawString(secondsHint + "s", x + 56, y + 14);
+            g2d.drawString(secondsHint + "s", secondsX, y + 14);
         }
     }
-
+     // 绘制闪电图标
     private void drawLightningIcon(Graphics2D g2d, int x, int y, Color color) {
         Polygon bolt = new Polygon();
         bolt.addPoint(x + 4, y);
@@ -648,7 +806,7 @@ public class GamePanel extends JPanel {
         g2d.setColor(color);
         g2d.fillPolygon(bolt);
     }
-
+      // 绘制盾牌标
     private void drawShieldIcon(Graphics2D g2d, int x, int y, Color color) {
         Polygon shield = new Polygon();
         shield.addPoint(x + 1, y + 2);
@@ -774,9 +932,13 @@ public class GamePanel extends JPanel {
         }
         speedBoostHolding = false;
         speedBoostPressStart = 0L;
+        speedBoostKeyPressed = false;
+        speedBoostMousePressed = false;
         goldHolding = false;
         goldActive = false;
         goldPressStart = 0L;
+        goldKeyPressed = false;
+        goldMousePressed = false;
         if (timer != null) {
             timer.setDelay(FRAME_DELAY_MS);
         }

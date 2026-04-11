@@ -10,6 +10,7 @@ public class MenuPanel extends JPanel {
     JButton normalButton = new JButton("普通模式");
     JButton hardButton = new JButton("困难模式");
     JButton crazyButton = new JButton("狂暴模式");
+    JButton IntroButton = new JButton("游戏介绍");
     static JButton rankingButton = new JButton("排行榜");
     JButton settingButton = new JButton("⚙");
     private static final Color HERO_FILL = new Color(255, 255, 255, 170);
@@ -33,6 +34,7 @@ public class MenuPanel extends JPanel {
         hardButton.setBounds(300, 230, 220, 56);
         crazyButton.setBounds(300, 320, 220, 56);
         rankingButton.setBounds(300, 410, 220, 56);
+        IntroButton.setBounds(300, 500, 220, 56);
         settingButton.setBounds(764, 12, 36, 36);
 
         UIFactory.styleMainButton(normalButton, new Color(0x58C6A9), Color.WHITE);
@@ -40,12 +42,14 @@ public class MenuPanel extends JPanel {
         UIFactory.styleMainButton(crazyButton, new Color(0xA682F0), Color.WHITE);
         UIFactory.styleMainButton(rankingButton, new Color(0xF0B868), Color.WHITE);
         UIFactory.styleIconButton(settingButton, new Color(0x4F8FDB), Color.WHITE);
+        UIFactory.styleMainButton(IntroButton, new Color(0xEA8A72), Color.WHITE);
 
         add(normalButton);
         add(hardButton);
         add(crazyButton);
         add(rankingButton);
         add(settingButton);
+        add(IntroButton);
     }
 
     private void setAddMouseListener() {
@@ -93,6 +97,13 @@ public class MenuPanel extends JPanel {
                 Main.turnPage("setting");
             }
         });
+
+        IntroButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                Main.turnPage("intro");
+            }
+        });
     }
 
     @Override
@@ -101,21 +112,21 @@ public class MenuPanel extends JPanel {
         try {
             drawBackGround(g);
             setMyLabel(g);
-            drawGuideText(g);
+            // drawGuideText(g);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void drawGuideText(Graphics g) {
+    /*private void drawGuideText(Graphics g) {
         Graphics2D g2d = (Graphics2D) g.create();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        UIFactory.drawRoundedPanel(g2d, 80, 606, 623, 48, 16, new Color(255, 255, 255, 165), new Color(0xA9D4EF));
+        UIFactory.drawRoundedPanel(g2d, 80, 606, 620, 48, 16, new Color(255, 255, 255, 165), new Color(0xA9D4EF));
         g2d.setColor(new Color(0x2E5D83));
         g2d.setFont(new Font("幼圆", Font.BOLD, 16));
-        g2d.drawString("游戏指南:方向键/WASD 控制移动，Q 加速（5秒），F 金身（2秒），空格 开始/暂停", 85, 635);
+        g2d.drawString("游戏指南:方向键/WASD 控制移动，Q/右键 加速（5秒），F/左键 金身（2秒），空格 开始/暂停", 85, 635);
         g2d.dispose();
-    }
+    }*/
 
     private void setMyLabel(Graphics g) {
         Graphics2D g2d = (Graphics2D) g.create();

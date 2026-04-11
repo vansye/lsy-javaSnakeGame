@@ -1,10 +1,10 @@
 package com.SnakeGame.game;
 
 import java.awt.*;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,9 +19,10 @@ public final class GameConfig {
     private static final Map<String, String> MODE_SKINS = new HashMap<>();
     private static final Map<String, Color> MODE_CUSTOM_BOARD_COLORS = new HashMap<>();
     private static final Map<String, Color> MODE_CUSTOM_GRID_COLORS = new HashMap<>();
+    private static final Map<String, Color> MODE_CUSTOM_OBSTACLE_COLORS = new HashMap<>();
     private static final List<String> SUPPORTED_MODES = List.of("normal", "hard", "crazy");
     private static final List<String> SUPPORTED_SKINS = List.of("classic", "fresh", "night", "custom");
-    private static final String CONFIG_FILE = "user-config.properties";
+    private static final Path CONFIG_FILE = AppPaths.getUserConfigPath();
 
     private static String currentMode = "normal";
 
@@ -165,6 +166,21 @@ public final class GameConfig {
         MODE_CUSTOM_GRID_COLORS.put(mode, color);
     }
 
+    public static void setCustomObstacleColor(Color color) {
+        setCustomObstacleColor(currentMode, color);
+    }
+
+    public static void setCustomObstacleColor(String mode, Color color) {
+        if (!isValidMode(mode)) {
+            return;
+        }
+        if (color == null) {
+            MODE_CUSTOM_OBSTACLE_COLORS.remove(mode);
+            return;
+        }
+        MODE_CUSTOM_OBSTACLE_COLORS.put(mode, color);
+    }
+
     public static Color getCustomBoardColor() {
         return getCustomBoardColor(currentMode);
     }
@@ -187,6 +203,17 @@ public final class GameConfig {
         return MODE_CUSTOM_GRID_COLORS.get(mode);
     }
 
+    public static Color getCustomObstacleColor() {
+        return getCustomObstacleColor(currentMode);
+    }
+
+    public static Color getCustomObstacleColor(String mode) {
+        if (!isValidMode(mode)) {
+            return null;
+        }
+        return MODE_CUSTOM_OBSTACLE_COLORS.get(mode);
+    }
+
     public static void clearCustomGameColors() {
         clearCustomGameColors(currentMode);
     }
@@ -197,6 +224,7 @@ public final class GameConfig {
         }
         MODE_CUSTOM_BOARD_COLORS.remove(mode);
         MODE_CUSTOM_GRID_COLORS.remove(mode);
+        MODE_CUSTOM_OBSTACLE_COLORS.remove(mode);
     }
 
     public static String getCurrentSnakeSkin() {
@@ -231,8 +259,14 @@ public final class GameConfig {
 
     public static Color getObstacleColor() {
         String skin = getCurrentSkin();
+        if ("custom".equals(skin)) {
+            Color custom = getCustomObstacleColor();
+            if (custom != null) {
+                return custom;
+            }
+            return new Color(0x5E2E0A);
+        }
         return switch (skin) {
-            case "custom" -> new Color(0x5E2E0A);
             case "fresh" -> new Color(0x754827);
             case "night" -> new Color(0x6A83B7);
             default -> new Color(0xF48593);
@@ -264,23 +298,26 @@ public final class GameConfig {
             if (grid != null) {
                 props.setProperty(mode + ".custom.grid", toHex(grid));
             }
+            Color obstacle = getCustomObstacleColor(mode);
+            if (obstacle != null) {
+                props.setProperty(mode + ".custom.obstacle", toHex(obstacle));
+            }
         }
 
-        try (FileOutputStream out = new FileOutputStream(CONFIG_FILE)) {
-            props.store(out, "Snake Game User Preferences");
+        try {
+            AppPaths.atomicStore(props, CONFIG_FILE, "Snake Game User Preferences");
         } catch (IOException e) {
             System.err.println("保存配置失败: " + e.getMessage());
         }
     }
 
     private static void loadUserPreferences() {
-        File file = new File(CONFIG_FILE);
-        if (!file.exists()) {
+        if (!Files.exists(CONFIG_FILE)) {
             return;
         }
 
         Properties props = new Properties();
-        try (FileInputStream in = new FileInputStream(file)) {
+        try (InputStream in = Files.newInputStream(CONFIG_FILE)) {
             props.load(in);
         } catch (IOException e) {
             System.err.println("读取配置失败: " + e.getMessage());
@@ -307,11 +344,15 @@ public final class GameConfig {
 
             Color board = parseHexColor(props.getProperty(mode + ".custom.board"));
             Color grid = parseHexColor(props.getProperty(mode + ".custom.grid"));
+            Color obstacleColor = parseHexColor(props.getProperty(mode + ".custom.obstacle"));
             if (board != null) {
                 MODE_CUSTOM_BOARD_COLORS.put(mode, board);
             }
             if (grid != null) {
                 MODE_CUSTOM_GRID_COLORS.put(mode, grid);
+            }
+            if (obstacleColor != null) {
+                MODE_CUSTOM_OBSTACLE_COLORS.put(mode, obstacleColor);
             }
         }
     }
