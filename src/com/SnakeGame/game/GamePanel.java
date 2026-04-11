@@ -56,6 +56,7 @@ public class GamePanel extends JPanel {
     private final JButton settingButton = new JButton("⚙");
     // 仅在开局前/结束后显示的大按钮，避免游戏中遮挡网格
     private final JButton startButton = new JButton("开始游戏");
+    private final JButton menu_1Button = new JButton("返回菜单");
     private final JButton rankButton = new JButton("排行榜");
     private final JButton menuButton = new JButton("返回菜单");
 
@@ -237,11 +238,13 @@ public class GamePanel extends JPanel {
         // 结束态按钮区域采用上下两行，视觉更居中，不遮挡结算文字
         startButton.setBounds(317, 482, 180, 44);
         menuButton.setBounds(227, 538, 160, 40);
+        menu_1Button.setBounds(317, 546, 180, 44);
         rankButton.setBounds(427, 538, 160, 40);
 
         UIFactory.styleIconButton(backButton, new Color(0x4A88D0), Color.WHITE);
         UIFactory.styleIconButton(settingButton, new Color(0x4A88D0), Color.WHITE);
         UIFactory.styleMainButton(startButton, new Color(0x5EBB7E), Color.WHITE);
+        UIFactory.styleMainButton(menu_1Button, new Color(0x5EBB7E), Color.WHITE);
         UIFactory.styleMainButton(menuButton, new Color(0x59A5C6), Color.WHITE);
         UIFactory.styleMainButton(rankButton, new Color(0x7D9CF5), Color.WHITE);
 
@@ -266,11 +269,16 @@ public class GamePanel extends JPanel {
             Main.turnPage("menu");
             MenuPanel.resetMenu();
         });
+        menu_1Button.addActionListener(e -> {
+            Main.turnPage("menu");
+            MenuPanel.resetMenu();
+        });
 
         add(backButton);
         add(settingButton);
         add(startButton);
         add(menuButton);
+        add(menu_1Button);
         add(rankButton);
         updateOverlayButtons();
     }
@@ -640,7 +648,9 @@ public class GamePanel extends JPanel {
 
 //    绘制食物
     private void drawFood(Graphics g) {
-        Images.food.paintIcon(this, g, Food.getFx(), Food.getFy());
+        for(int i = 0; i < Food.getFoodCount(); i++) {
+            Images.food.paintIcon(this, g, Food.getFx(i), Food.getFy(i));
+        }
     }
 
 //      绘制网格
@@ -885,11 +895,13 @@ public class GamePanel extends JPanel {
             startButton.setVisible(false);
             menuButton.setVisible(false);
             rankButton.setVisible(false);
+            menu_1Button.setVisible(false);
             return;
         }
 
         // 待开始：仅显示开始；结束后：显示开始+返回菜单+排行榜
         startButton.setVisible(true);
+        menu_1Button.setVisible(!isStart&&!isDead);
         menuButton.setVisible(isDead);
         rankButton.setVisible(isDead);
     }

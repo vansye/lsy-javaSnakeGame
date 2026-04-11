@@ -47,9 +47,10 @@ public class Obstacle {
         if ((x >= 200 && x <= 400) && (y >= 250 && y <= 350)) {
             return false;
         }
-
-        if (x == Food.getFx() && y == Food.getFy()) {
+        for(int i = 0; i < Food.getFoodCount(); i++){
+        if (x == Food.getFx(i) && y == Food.getFy(i)) {
             return false;
+            }
         }
 
         for (int i = 0; i < Snake.getLength(); i++) {
