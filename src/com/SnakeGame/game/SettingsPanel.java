@@ -59,7 +59,7 @@ public class SettingsPanel extends JPanel {
         UIFactory.styleComboBox(modeSelector);
         contentPanel.add(modeSelector);
 
-        addLabel("皮肤：", 130, 140);
+        addLabel("场景：", 130, 140);
         skinSelector.setBounds(240, 140, 260, 35);
         UIFactory.styleComboBox(skinSelector);
         contentPanel.add(skinSelector);

@@ -50,10 +50,10 @@ public class RankPanel extends JPanel {
         backButton.setBounds(12, 12, 34, 34);
         settingButton.setBounds(764, 12, 34, 34);
         // 底部按钮统一尺寸与间距，保证视觉更和谐
-        normalButton.setBounds(140, 598, 120, 40);
-        hardButton.setBounds(278, 598, 120, 40);
-        crazyButton.setBounds(416, 598, 120, 40);
-        menuButton.setBounds(554, 598, 120, 40);
+        normalButton.setBounds(140, 598, 125, 40);
+        hardButton.setBounds(278, 598, 125, 40);
+        crazyButton.setBounds(416, 598, 125, 40);
+        menuButton.setBounds(554, 598, 125, 40);
 
         UIFactory.styleIconButton(backButton, new Color(0x4A88D0), Color.WHITE);
         UIFactory.styleIconButton(settingButton, new Color(0x4A88D0), Color.WHITE);
