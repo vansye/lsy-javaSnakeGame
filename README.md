@@ -182,6 +182,34 @@ SnakeGame/
 
 ## 📜 版本历史
 
+### v1.3.0 (2026-04-28)
+
+#### 代码重构与质量提升
+
+##### 🔧 静态实例化重构
+- ♻️ **`Snake` 改为实例类**：移除全部 `static`，蛇的状态通过实例管理
+- ♻️ **`Food` 改为实例类**：食物生成与碰撞判定通过实例方法完成
+- ♻️ **`Obstacle` 改为实例类**：障碍物绘制与碰撞判定通过实例方法完成
+- ♻️ **`GamePanel` 状态实例化**：`isStart`/`isDead`/`score` 等游戏状态改为实例字段，`Snake`/`Food`/`Obstacle` 作为实例持有
+- ♻️ **`MenuPanel` 状态实例化**：选中的模式改为实例属性
+- ♻️ **`Main` 路由适配**：面板引用改为实例字段，统一初始化入口
+
+##### 📝 命名规范化
+- 🏷️ `skx`/`sky` → `segmentX`/`segmentY`（`Snake`）
+- 🏷️ `ox`/`oy` → `obstacleX`/`obstacleY`（`Obstacle`）
+- 🏷️ `Judge` → `isValidPosition`（`Food`）
+- 🏷️ `getFx`/`getFy` → `getFoodX`/`getFoodY`（`Food`）
+- 🏷️ `state`/`getState` → `selectedMode`/`getSelectedMode`（`MenuPanel`）
+- 🏷️ `isStart`/`isIsStart` → `started`/`isStarted`（`GamePanel`）
+- 🏷️ `setIsDead`/`setIsStart` → `setDead`/`setStarted`（`GamePanel`）
+- 🏷️ `touchJudge` → `checkCollision`（`Snake`）
+
+##### 🎯 重构收益
+- 🧩 **解耦**：类之间不再通过全局静态状态通信，依赖关系改为显式的实例引用和方法参数
+- 🧪 **可测试性**：实例化后可为 `Snake`/`Food` 编写独立的单元测试
+- 🔌 **可扩展**：为后续双人模式等"多实例"场景扫清障碍
+- 📖 **可读性**：消除晦涩缩写，代码即文档
+
 ### v1.2.1 (2026-04-12)
 
 #### 文档与发布说明更新
@@ -328,22 +356,20 @@ SnakeGame/
 
 ## 🚧 未来计划
 
-### v1.3.0 (计划中)
+### v1.4.0 (计划中)
 - [ ] 添加音效系统
 - [ ] 添加动画效果
-- [ ] 添加设置界面
 - [ ] 优化游戏性能
 - [ ] 添加更多游戏模式
 
-### v1.4.0 (计划中)
+### v1.5.0 (计划中)
 - [ ] 添加多人模式
 - [ ] 添加网络对战功能
 - [ ] 添加成就系统
-- [ ] 添加皮肤系统
-- [ ] 添加关卡系统
+- [ ] 完善皮肤系统
 
 ---
 
-**最后更新**：2026-04-12
-**当前版本**：v1.2.1
+**最后更新**：2026-04-28
+**当前版本**：v1.3.0
 **维护状态**：积极维护中

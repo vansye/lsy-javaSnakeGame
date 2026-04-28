@@ -6,6 +6,104 @@
 
 ## 版本历史
 
+### v1.3.0 (2026-04-28)
+
+#### 🔧 代码重构：静态实例化 + 命名规范化
+
+本次重构聚焦代码质量，**不涉及游戏机制与存档格式的变更**，排行榜文件与配置文件完全向前兼容。
+
+##### 解决的问题
+
+- 🎯 **滥用 `static`**：`Snake`、`Food`、`Obstacle` 所有字段与方法均为 `static`，导致全局状态紧耦合，无法支持多实例场景（如双人模式）
+- 🎯 **命名晦涩**：缩写变量如 `skx`/`sky`、`ox`/`oy`、`Judge` 方法名不利于代码阅读
+- 🎯 **初始化重复**：`MenuPanel.applyModeSetting()` 与 `GamePanel.prepareGameByMode()` 存在重复初始化逻辑
+
+##### 核心改动
+
+###### 1. 实体类实例化
+
+| 类 | 改前 | 改后 |
+|----|------|------|
+| `Snake` | 全部 `static` 字段与方法 | 实例类，通过构造器创建 |
+| `Food` | 全部 `static` 字段与方法 | 实例类，通过构造器创建 |
+| `Obstacle` | 全部 `static` 字段与方法 + 私有构造器 | 实例类，通过默认构造器创建 |
+
+`GamePanel` 持有 `Snake`、`Food`、`Obstacle` 三个实例：
+```java
+// GamePanel.java
+private Snake snake;
+private Food food;
+private Obstacle obstacle;
+```
+
+###### 2. 依赖传递改为方法参数
+
+原本 `Snake.move()` 内部通过 `GamePanel.setIsDead()` 改全局状态。重构后通过参数传入所需依赖：
+
+```java
+// 改前：静态调用
+//Snake.move();  // 内部调 GamePanel.setIsDead()
+
+// 改后：实例方法 + 参数传递
+//snake.move(obstacle, this);  // 显式声明依赖
+```
+
+同理 `Food.eat()`：
+```java
+// 改前
+//Food.eat();  // 内部调 GamePanel.setScore() + Snake.setLength()
+
+// 改后
+//food.eat(snake, this);  // 需要谁一目了然
+```
+
+###### 3. 命名规范化
+
+| 原名称 | 新名称 | 所属类 |
+|--------|--------|--------|
+| `skx` / `sky` | `segmentX` / `segmentY` | `Snake` |
+| `prevSkx` / `prevSky` | `prevSegmentX` / `prevSegmentY` | `Snake` |
+| `touchJudge` | `checkCollision` | `Snake` |
+| `Judge` | `isValidPosition` | `Food` |
+| `getFx` / `getFy` | `getFoodX` / `getFoodY` | `Food` |
+| `ox` / `oy` | `obstacleX` / `obstacleY` | `Obstacle` |
+| `state` / `getState` | `selectedMode` / `getSelectedMode` | `MenuPanel` |
+| `isStart` / `isIsStart` | `started` / `isStarted` | `GamePanel` |
+| `isDead` / `isIsDead` | `dead` / `isDead` | `GamePanel` |
+| `setIsDead` / `setIsStart` | `setDead` / `setStarted` | `GamePanel` |
+
+###### 4. 消除重复初始化
+
+`MenuPanel.applyModeSetting()` 方法移除，所有模式准备逻辑统一由 `GamePanel.prepareGameByMode()` 处理，由 `Main.turnPage("game")` 统一调用。
+
+###### 5. MenuPanel 状态实例化
+
+`selectedMode`（原 `state`）改为实例字段，`rankingButton` 改为实例按钮，`resetMenu()` 改为实例方法，在 `Main.turnPage("menu")` 中自动调用。
+
+##### 变更的文件
+
+| 文件 | 改动量 | 说明 |
+|------|--------|------|
+| `Snake.java` | 140 行改动 | 实例化 + 重命名 |
+| `Food.java` | 85 行改动 | 实例化 + 重命名 |
+| `Obstacle.java` | 62 行改动 | 实例化 + 重命名 |
+| `GamePanel.java` | 570 行改动 | 状态实例化，持有实体实例 |
+| `MenuPanel.java` | 62 行改动 | state 实例化，简化按钮逻辑 |
+| `Main.java` | 61 行改动 | 面板实例字段，统一初始化 |
+
+##### 影响评估
+
+- **存档格式**：无变更，`rankings.dat` / `user-config.properties` 读写路径与格式完全不变
+- **游戏机制**：无变更，所有技能参数、模式参数、速度曲线保持不变
+- **运行方式**：无变更，`Main` 入口不变
+- **测试建议**：建议在三种模式下各游玩一局，验证技能、死亡判定、排行榜保存正常
+
+##### 兼容性
+- ✅ 旧版 `rankings.dat` 和 `user-config.properties` 无需迁移
+- ✅ JAR 打包方式不受影响
+
+---
+
 ### v1.2.1 (2026-04-12)
 
 #### 📝 文档一致性更新
@@ -360,6 +458,6 @@
 
 ---
 
-**最后更新**：2025-03-04
-**当前版本**：v1.1.0
+**最后更新**：2026-04-28
+**当前版本**：v1.3.0
 **维护状态**：积极维护中
