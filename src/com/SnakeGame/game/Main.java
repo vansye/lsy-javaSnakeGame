@@ -3,12 +3,20 @@ package com.SnakeGame.game;
 import javax.swing.*;
 import java.awt.*;
 
+/**
+ * 程序入口与页面路由中心
+ */
 public class Main {
     private static CardLayout cardLayout = new CardLayout();
     private static JPanel mainPanel = new JPanel(cardLayout);
-//    public static String state;
+
+    // 页面实例引用（由 main 方法初始化）
+    private static GamePanel gamePanel;
+    private static MenuPanel menuPanel;
+
     private static String currentPage;
     private static String lastPage;
+
     public static void main(String[] args) {
         try {
             AppPaths.bootstrap();
@@ -17,36 +25,29 @@ public class Main {
             return;
         }
 
-        // 创建游戏面板
-
-        GamePanel gamePanel = new GamePanel();
-        MenuPanel menuPanel = new MenuPanel();
+        gamePanel = new GamePanel();
+        menuPanel = new MenuPanel();
         RankPanel rankPanel = new RankPanel();
         GameIntroPanel gameIntroPanel = new GameIntroPanel();
         SettingsPanel settingsPanel = new SettingsPanel();
+
         String Pname = "menu";
-        //String Pname = "game";
-        //String Pname = "intro";
-        // 创建配置面板
+
         mainPanel.add(gamePanel, "game");
         mainPanel.add(menuPanel, "menu");
         mainPanel.add(rankPanel, "rank");
         mainPanel.add(settingsPanel, "setting");
         mainPanel.add(gameIntroPanel, "intro");
 
-        // 创建并配置窗口
         JFrame frame = new JFrame("Lsy的贪吃蛇游戏");
         frame.setSize(814, 685);
         frame.setLocationRelativeTo(null);
         frame.setResizable(false);
         frame.add(mainPanel);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        
-        // 显示窗口
+
         frame.setVisible(true);
 
-        //默认面板
-        //cardLayout.show(mainPanel, "menu");
         turnPage(Pname);
         System.out.println("游戏启动成功！");
     }
@@ -56,31 +57,26 @@ public class Main {
             return;
         }
 
-        // 记录页面跳转历史，为 goBack() 提供“上一页”信息。
         if (currentPage != null && !currentPage.equals(name)) {
             lastPage = currentPage;
         }
         currentPage = name;
 
         cardLayout.show(mainPanel, name);
-        
+
         if ("game".equals(name)) {
-            GamePanel.prepareGameByMode(MenuPanel.getState());
-            Snake.init();
-            Food.init();
-            
-            for (Component comp : mainPanel.getComponents()) {
-                if (comp instanceof GamePanel) {
-                    comp.requestFocusInWindow();
-                    break;
-                }
-            }
+            gamePanel.prepareGameByMode(menuPanel.getSelectedMode());
+            gamePanel.requestFocusInWindow();
+        }
+
+        if ("menu".equals(name)) {
+            menuPanel.resetMenu();
         }
 
         if ("setting".equals(name)) {
             String preferredMode = "normal";
             if ("game".equals(lastPage)) {
-                preferredMode = GamePanel.getCurrentGameMode();
+                preferredMode = gamePanel.getCurrentGameMode();
             }
             for (Component comp : mainPanel.getComponents()) {
                 if (comp instanceof SettingsPanel) {
@@ -97,22 +93,15 @@ public class Main {
             turnPage("menu");
             return;
         }
-        // 交换 current/last，可实现连续返回而不丢失导航轨迹。
         String target = lastPage;
         lastPage = currentPage;
         currentPage = target;
         cardLayout.show(mainPanel, target);
 
         if ("game".equals(target)) {
-            for (Component comp : mainPanel.getComponents()) {
-                if (comp instanceof GamePanel) {
-                    comp.requestFocusInWindow();
-                    break;
-                }
-            }
+            gamePanel.requestFocusInWindow();
         }
     }
 
-    public static String getLastPage() {return lastPage;}
-
+    public static String getLastPage() { return lastPage; }
 }

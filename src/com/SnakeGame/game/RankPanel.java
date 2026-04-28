@@ -9,6 +9,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Properties;
 
+/**
+ * 排行榜面板：按模式展示与持久化前十成绩
+ */
 public class RankPanel extends JPanel {
     private static int[] normalRank = new int[10];
     private static int[] hardRank = new int[10];
@@ -36,9 +39,11 @@ public class RankPanel extends JPanel {
     private static final Color CARD_BORDER = new Color(0x9CCEF5);
 
     static {
+        // 类加载时先尝试读取本地榜单
         loadRankings();
     }
 
+    // 初始化页面组件并默认展示 normal 榜
     public RankPanel() {
         setLayout(null);
         setupButtons();
@@ -46,6 +51,7 @@ public class RankPanel extends JPanel {
         showRank("normal");
     }
 
+    // 按钮布局与导航事件绑定
     private void setupButtons() {
         backButton.setBounds(12, 12, 34, 34);
         settingButton.setBounds(764, 12, 34, 34);
@@ -76,10 +82,7 @@ public class RankPanel extends JPanel {
             showRank("crazy");
             repaint();
         });
-        menuButton.addActionListener(e -> {
-            Main.turnPage("menu");
-            MenuPanel.resetMenu();
-        });
+        menuButton.addActionListener(e -> Main.turnPage("menu"));
 
         add(backButton);
         add(settingButton);
@@ -89,8 +92,10 @@ public class RankPanel extends JPanel {
         add(menuButton);
     }
 
+    // 切换当前展示模式并拷贝对应榜单到通用展示缓冲区
     public static void showRank(String model) {
         // 将“当前模式数据”拷贝到统一展示数组，绘制代码只关心 rank/rankTime/rankDuration
+        // 这样绘制层无需关心模式分支，降低 UI 逻辑复杂度。
         switch (model) {
             case "normal" -> {
                 currentModel = "normal";
@@ -114,6 +119,7 @@ public class RankPanel extends JPanel {
     }
 
     @Override
+    // 绘制排行榜底板，再叠加标题与行数据
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g.create();
@@ -125,6 +131,7 @@ public class RankPanel extends JPanel {
         drawRank(g, rank);
     }
 
+    // 绘制 10 行成绩数据
     private static void drawRank(Graphics g, int[] rank) {
         Graphics2D g2d = (Graphics2D) g.create();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -150,6 +157,7 @@ public class RankPanel extends JPanel {
         g2d.dispose();
     }
 
+    // 绘制页面主标题与列标题
     private void drawTitle(Graphics g) {
         Graphics2D g2d = (Graphics2D) g.create();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -173,6 +181,7 @@ public class RankPanel extends JPanel {
         g2d.dispose();
     }
 
+    // 更新成绩：插入对应模式榜单并保存
     public static void updateRank(int score, String model, int durationSec) {
         // 按模式写入对应榜单，并落盘保存
         if (model.equals("normal")) {
@@ -185,10 +194,12 @@ public class RankPanel extends JPanel {
         saveRankings();
     }
 
+    // 插入算法：分数降序，分数相同按用时升序
     private static void insertScore(int[] rank, int score, LocalDateTime[] timeArray, int[] durationArray, int durationSec) {
         // 先按分数降序，再按用时升序进行插入
         for (int i = 0; i < rank.length; i++) {
             if (score > rank[i] || (score == rank[i] && (durationArray[i] == 0 || durationSec < durationArray[i]))) {
+                // 经典“插入一位”写法：从尾到 i+1 依次后移，给第 i 位腾出空槽。
                 for (int j = rank.length - 1; j > i; j--) {
                     rank[j] = rank[j - 1];
                 }
@@ -201,11 +212,13 @@ public class RankPanel extends JPanel {
                 timeArray[i] = LocalDateTime.now();
                 rank[i] = score;
                 durationArray[i] = Math.max(0, durationSec);
+                // 只插入一次，完成后立即结束，避免同一成绩被重复写入。
                 break;
             }
         }
     }
 
+    // 从 rankings 文件读取三个模式的榜单数据
     private static void loadRankings() {
         if (!Files.exists(RANK_FILE)) {
             System.out.println("排行榜文件不存在，使用默认数据");
@@ -219,6 +232,7 @@ public class RankPanel extends JPanel {
             }
 
             for (int i = 0; i < 10; i++) {
+                // 键名采用 mode + index + 字段名 的扁平结构，便于 Properties 直接存取。
                 String scorekey = "normal" + i + "_score";
                 String timekey = "normal" + i + "_time";
                 String durationKey = "normal" + i + "_duration";
@@ -268,11 +282,13 @@ public class RankPanel extends JPanel {
         }
     }
 
+    // 将三个模式榜单一次性写回磁盘
     private static void saveRankings() {
         try {
             Properties props = new Properties();
 
             for (int i = 0; i < 10; i++) {
+                // 固定写入前十，保证文件结构稳定，读取时无需探测长度。
                 props.setProperty("normal" + i + "_score", String.valueOf(normalRank[i]));
                 props.setProperty("normal" + i + "_time", normalTime[i] != null ? normalTime[i].toString() : "");
                 props.setProperty("normal" + i + "_duration", String.valueOf(normalDuration[i]));
@@ -294,6 +310,7 @@ public class RankPanel extends JPanel {
         }
     }
 
+    // 将结束时间格式化为可读字符串
     private static String formatTime(LocalDateTime time) {
         if (time == null) {
             return "未记录";

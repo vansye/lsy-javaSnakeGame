@@ -1,86 +1,83 @@
 package com.SnakeGame.game;
 
-import javax.swing.*;
-import java.awt.*;
 import java.awt.event.KeyEvent;
 
+/**
+ * 蛇实体：维护身体坐标、移动方向与插值渲染坐标
+ */
 public class Snake {
-    public static int[] skx = new int[200];
-    public static int[] sky = new int[200];
-    private static int[] prevSkx = new int[200];
-    private static int[] prevSky = new int[200];
-    private static int length = 3;
-    private static String direction = "R";
-    private static String bodyDirection = "R";
+    public int[] segmentX = new int[200];
+    public int[] segmentY = new int[200];
+    private int[] prevSegmentX = new int[200];
+    private int[] prevSegmentY = new int[200];
+    private int length = 3;
+    private String direction = "R";
+    private String bodyDirection = "R";
 
-    public static void init() {
+    // 重置蛇到开局状态
+    public void init() {
         length = 10;
         int k = 300;
         for (int i = 0; i < length; i++, k -= 25) {
-            skx[i] = k;
-            sky[i] = 300;
-            prevSkx[i] = k;
-            prevSky[i] = 300;
+            segmentX[i] = k;
+            segmentY[i] = 300;
+            prevSegmentX[i] = k;
+            prevSegmentY[i] = 300;
         }
         direction = "R";
         bodyDirection = "R";
     }
 
-    private static void capturePreviousState() {
+    // 记录上一逻辑帧坐标，用于渲染阶段插值
+    private void capturePreviousState() {
         int copyLen = Math.max(1, Math.min(length, 200));
-        System.arraycopy(skx, 0, prevSkx, 0, copyLen);
-        System.arraycopy(sky, 0, prevSky, 0, copyLen);
+        System.arraycopy(segmentX, 0, prevSegmentX, 0, copyLen);
+        System.arraycopy(segmentY, 0, prevSegmentY, 0, copyLen);
     }
 
-    static void touchJudge() {
+    // 碰撞判定：身体碰撞与障碍碰撞
+    private void checkCollision(Obstacle obstacle, GamePanel gamePanel) {
         for (int i = length - 1; i > 0; i--) {
-            if (skx[0] == skx[i] && sky[0] == sky[i]) {
-                GamePanel.setIsDead(true);
-                GamePanel.setIsStart(false);
+            if (segmentX[0] == segmentX[i] && segmentY[0] == segmentY[i]) {
+                gamePanel.setDead(true);
+                gamePanel.setStarted(false);
             }
         }
 
-        if (Obstacle.contains(skx[0], sky[0]) && !GamePanel.isGoldActive()) {
-            GamePanel.setIsDead(true);
-            GamePanel.setIsStart(false);
+        if (obstacle.contains(segmentX[0], segmentY[0]) && !gamePanel.isGoldActive()) {
+            gamePanel.setDead(true);
+            gamePanel.setStarted(false);
         }
     }
 
-    public static void move() {
-        // 先让身体跟随头部历史位置，再更新头部坐标。
+    // 逻辑移动：先整体后移，再推进蛇头
+    public void move(Obstacle obstacle, GamePanel gamePanel) {
         capturePreviousState();
 
+        // 从尾到头回填坐标
         for (int i = length - 1; i > 0; i--) {
-            skx[i] = skx[i - 1];
-            sky[i] = sky[i - 1];
+            segmentX[i] = segmentX[i - 1];
+            segmentY[i] = segmentY[i - 1];
             bodyDirection = direction;
         }
 
         switch (direction) {
-            case "R":
-                skx[0] += 25;
-                break;
-            case "L":
-                skx[0] -= 25;
-                break;
-            case "U":
-                sky[0] -= 25;
-                break;
-            case "D":
-                sky[0] += 25;
-                break;
+            case "R": segmentX[0] += 25; break;
+            case "L": segmentX[0] -= 25; break;
+            case "U": segmentY[0] -= 25; break;
+            case "D": segmentY[0] += 25; break;
         }
 
-        if (skx[0] <= 775 && skx[0] >= 0 && sky[0] <= 625 && sky[0] >= 50) {
-            // 头部移动完成后再统一做碰撞判定（自身 + 障碍）。
-            touchJudge();
+        if (segmentX[0] <= 775 && segmentX[0] >= 0 && segmentY[0] <= 625 && segmentY[0] >= 50) {
+            checkCollision(obstacle, gamePanel);
         } else {
-            GamePanel.setIsDead(true);
-            GamePanel.setIsStart(false);
+            gamePanel.setDead(true);
+            gamePanel.setStarted(false);
         }
     }
 
-    public static void keyPressed(KeyEvent e) {
+    // 键盘转向：禁止 180 度瞬间掉头
+    public void keyPressed(KeyEvent e) {
         if (e == null) return;
 
         switch (e.getKeyCode()) {
@@ -111,60 +108,53 @@ public class Snake {
         }
     }
 
-    public static int getLength() {
-        return length;
-    }
+    public int getLength() { return length; }
 
-    public static void setLength(int newLength) {
+    public void setLength(int newLength) {
         if (newLength > 0 && newLength < 200) {
-            // 新增段默认贴合尾部，避免新长度在渲染时从(0,0)突兀跳入。
             if (newLength > length && length > 0) {
-                int tailX = skx[length - 1];
-                int tailY = sky[length - 1];
-                int prevTailX = prevSkx[length - 1];
-                int prevTailY = prevSky[length - 1];
+                int tailX = segmentX[length - 1];
+                int tailY = segmentY[length - 1];
+                int prevTailX = prevSegmentX[length - 1];
+                int prevTailY = prevSegmentY[length - 1];
                 for (int i = length; i < newLength; i++) {
-                    skx[i] = tailX;
-                    sky[i] = tailY;
-                    prevSkx[i] = prevTailX;
-                    prevSky[i] = prevTailY;
+                    segmentX[i] = tailX;
+                    segmentY[i] = tailY;
+                    prevSegmentX[i] = prevTailX;
+                    prevSegmentY[i] = prevTailY;
                 }
             }
             length = newLength;
         }
     }
 
-    public static void incrementLength() {
+    public void incrementLength() {
         if (length < 199) {
             length++;
         }
     }
 
-    public static String getDirection() {
-        return direction;
-    }
+    public String getDirection() { return direction; }
 
-    public static void setDirection(String newDirection) {
+    public void setDirection(String newDirection) {
         if (newDirection != null &&
                 (newDirection.equals("R") || newDirection.equals("L") ||
-                        newDirection.equals("U") || newDirection.equals("D"))) {
+                 newDirection.equals("U") || newDirection.equals("D"))) {
             direction = newDirection;
         }
     }
 
-    public static int getRenderX(int index, float alpha) {
-        if (index < 0 || index >= length) {
-            return 0;
-        }
+    // 渲染 X：逻辑坐标与上一帧坐标线性插值
+    public int getRenderX(int index, float alpha) {
+        if (index < 0 || index >= length) return 0;
         float t = Math.max(0f, Math.min(1f, alpha));
-        return Math.round(prevSkx[index] + (skx[index] - prevSkx[index]) * t);
+        return Math.round(prevSegmentX[index] + (segmentX[index] - prevSegmentX[index]) * t);
     }
 
-    public static int getRenderY(int index, float alpha) {
-        if (index < 0 || index >= length) {
-            return 0;
-        }
+    // 渲染 Y：逻辑坐标与上一帧坐标线性插值
+    public int getRenderY(int index, float alpha) {
+        if (index < 0 || index >= length) return 0;
         float t = Math.max(0f, Math.min(1f, alpha));
-        return Math.round(prevSky[index] + (sky[index] - prevSky[index]) * t);
+        return Math.round(prevSegmentY[index] + (segmentY[index] - prevSegmentY[index]) * t);
     }
 }

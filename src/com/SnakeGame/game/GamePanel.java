@@ -9,39 +9,46 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-//     游戏主面板类 - 负责游戏的主要逻辑和渲染
+/**
+ * 游戏主面板：负责核心循环、输入处理与场景渲染
+ */
 public class GamePanel extends JPanel {
-    // 游戏状态变量
-    private static boolean isStart = false;
-    private static boolean isDead = false;
-    private static int score = 0;
-    public static Timer timer;
-    private static int speed = 250;
-    private static int time = 180;
-    private static int elapsedTime = 0;
-    private static boolean timedMode = false;
-    private static boolean scoreUpdate = false;
-    private static String gameMode = "normal";
+    // 游戏状态变量（实例字段）
+    private boolean started = false;
+    private boolean dead = false;
+    private int score = 0;
+    public Timer timer;
+    private int speed = 250;
+    private int time = 180;
+    private int elapsedTime = 0;
+    private boolean timedMode = false;
+    private boolean scoreUpdate = false;
+    private String gameMode = "normal";
 
-    private static final int SPEED_BOOST_DELTA_MS = 50; // 加速模式每次降低的延迟（ms）
+    // 游戏实体（实例字段）
+    private Snake snake;
+    private Food food;
+    private Obstacle obstacle;
+
+    private static final int SPEED_BOOST_DELTA_MS = 50;
     private static final long SPEED_BOOST_MAX_HOLD_MS = 5000L;
     private static final long SPEED_BOOST_COOLDOWN_MS = 3000L;
     private static final long GOLD_MAX_HOLD_MS = 2000L;
     private static final long GOLD_COOLDOWN_MS = 5000L;
     private static final int FRAME_DELAY_MS = 16;
 
-    private static boolean speedBoostHolding = false;
-    private static long speedBoostPressStart = 0L;
-    private static long speedBoostCooldownUntil = 0L;
-    private static boolean speedBoostKeyPressed = false;
-    private static boolean speedBoostMousePressed = false;
+    private boolean speedBoostHolding = false;
+    private long speedBoostPressStart = 0L;
+    private long speedBoostCooldownUntil = 0L;
+    private boolean speedBoostKeyPressed = false;
+    private boolean speedBoostMousePressed = false;
 
-    private static boolean goldHolding = false;
-    private static boolean goldActive = false;
-    private static long goldPressStart = 0L;
-    private static long goldCooldownUntil = 0L;
-    private static boolean goldKeyPressed = false;
-    private static boolean goldMousePressed = false;
+    private boolean goldHolding = false;
+    private boolean goldActive = false;
+    private long goldPressStart = 0L;
+    private long goldCooldownUntil = 0L;
+    private boolean goldKeyPressed = false;
+    private boolean goldMousePressed = false;
 
     private static final Color SPEED_SKILL_COLOR = new Color(0xEFA14E);
     private static final Color GOLD_SKILL_COLOR = new Color(0x6DBE4A);
@@ -54,7 +61,6 @@ public class GamePanel extends JPanel {
 
     private final JButton backButton = new JButton("<");
     private final JButton settingButton = new JButton("⚙");
-    // 仅在开局前/结束后显示的大按钮，避免游戏中遮挡网格
     private final JButton startButton = new JButton("开始游戏");
     private final JButton menu_1Button = new JButton("返回菜单");
     private final JButton rankButton = new JButton("排行榜");
@@ -68,139 +74,73 @@ public class GamePanel extends JPanel {
     private static final Color INFO_TEXT_COLOR = new Color(0x1B5877);
     private static final Color SKILL_READY_COLOR = new Color(0x3E8E5E);
 
-    public static boolean isIsStart() {
-        return isStart;
-    }
-
-    public static void setIsStart(boolean isStart) {
-        GamePanel.isStart = isStart;
-    }
-
-    public static boolean isIsDead() {
-        return isDead;
-    }
-
-    public static void setIsDead(boolean isDead) {
-        GamePanel.isDead = isDead;
-    }
-
-    public static int getScore() {
-        return score;
-    }
-
-    public static void setScore(int score) {
-        GamePanel.score = score;
-    }
-
-    public static int getSpeed() {
-        return speed;
-    }
-
-    public static void setSpeed(int speed) {
-        GamePanel.speed = Math.max(speed, 30);
-    }
-
-    public static void setTimedMode(boolean timedMode) {
-        GamePanel.timedMode = timedMode;
-    }
-
-    public static void setTimeLimit(int timeLimit) {
-        GamePanel.time = Math.max(30, timeLimit);
-    }
-
-    public static void setGameMode(String mode) {
-        if (mode != null && !mode.isEmpty()) {
-            gameMode = mode;
-            GameConfig.setCurrentMode(mode);
-        }
-    }
-
-    public static String getCurrentGameMode() {
-        return gameMode;
-    }
-
-    public static boolean isGoldActive() {
-        return goldActive;
-    }
-
-    public static void prepareGameByMode(String mode) {
-        if (mode != null && !mode.isEmpty()) {
-            gameMode = mode;
-        }
-        GameConfig.ModeSetting setting = GameConfig.getModeSetting(gameMode);
-        speed = setting.getStartSpeed();
-        timedMode = setting.isTimedMode();
-        time = setting.getTimeLimitSec();
-        elapsedTime = 0;
-        score = 0;
-        isStart = false;
-        isDead = false;
-        scoreUpdate = false;
-        speedBoostHolding = false;
-        speedBoostPressStart = 0L;
-        speedBoostCooldownUntil = 0L;
-        speedBoostKeyPressed = false;
-        speedBoostMousePressed = false;
-        goldHolding = false;
-        goldActive = false;
-        goldPressStart = 0L;
-        goldCooldownUntil = 0L;
-        goldKeyPressed = false;
-        goldMousePressed = false;
-        Food.setSpeedChangeRate(setting.getSpeedChangeRate());
-        Obstacle.init(setting.getObstacleCount());
-        if (timer != null) {
-            timer.setDelay(FRAME_DELAY_MS);
-        }
-    }
-
-    public static boolean isScoreUpdate() {
-        return scoreUpdate;
-    }
-
-    public static void setScoreUpdate(boolean scoreUpdate) {
-        GamePanel.scoreUpdate = scoreUpdate;
-    }
+    // ========== 构造器 ==========
 
     public GamePanel() {
-        // 初始化游戏状态
-        initializeGameState();
+        snake = new Snake();
+        food = new Food();
+        obstacle = new Obstacle();
 
-        // 设置面板属性
         setupPanelProperties();
-
-        // 设置按钮
         setupButtons();
-
-        // 添加键盘监听器
         addKeyboardListener();
-
-        // 添加鼠标监听器
         addMouseControlListener();
-
-        // 初始化定时器
         initializeTimer();
-
-        // 启动定时器
         if (timer != null) {
             timer.start();
         }
     }
 
-//    游戏初始化
-    private void initializeGameState() {
-        Snake.init();
-        Food.init();
-        gameMode = MenuPanel.getState();
+    // ========== 状态访问器 ==========
+
+    public boolean isStarted() { return started; }
+    public void setStarted(boolean started) { this.started = started; }
+
+    public boolean isDead() { return dead; }
+    public void setDead(boolean dead) { this.dead = dead; }
+
+    public int getScore() { return score; }
+    public void setScore(int score) { this.score = score; }
+
+    public int getSpeed() { return speed; }
+    public void setSpeed(int speed) { this.speed = Math.max(speed, 30); }
+
+    public boolean isGoldActive() { return goldActive; }
+
+    public Obstacle getObstacle() { return obstacle; }
+
+    public String getCurrentGameMode() { return gameMode; }
+
+    public boolean isScoreUpdate() { return scoreUpdate; }
+    public void setScoreUpdate(boolean scoreUpdate) { this.scoreUpdate = scoreUpdate; }
+
+    // ========== 模式准备与重置 ==========
+
+    public void prepareGameByMode(String mode) {
+        if (mode != null && !mode.isEmpty()) {
+            gameMode = mode;
+        }
         GameConfig.setCurrentMode(gameMode);
-        applyModeSetting();
-        isStart = false;
-        isDead = false;
-        score = 0;
+        GameConfig.ModeSetting setting = GameConfig.getModeSetting(gameMode);
+        speed = setting.getStartSpeed();
+        timedMode = setting.isTimedMode();
+        time = setting.getTimeLimitSec();
         elapsedTime = 0;
+        score = 0;
+        started = false;
+        dead = false;
         scoreUpdate = false;
-        lastSecondMark = System.currentTimeMillis();
-        renderAlpha = 0f;
+        resetSkillStates();
+        food.setSpeedChangeRate(setting.getSpeedChangeRate());
+        snake.init();
+        obstacle.init(setting.getObstacleCount(), snake);
+        food.init(snake, obstacle);
+        if (timer != null) {
+            timer.setDelay(FRAME_DELAY_MS);
+        }
+    }
+
+    private void resetSkillStates() {
         speedBoostHolding = false;
         speedBoostPressStart = 0L;
         speedBoostCooldownUntil = 0L;
@@ -214,28 +154,42 @@ public class GamePanel extends JPanel {
         goldMousePressed = false;
     }
 
-    private void applyModeSetting() {
-        GameConfig.setCurrentMode(gameMode);
+    // 重置游戏状态并回到待开始界面
+    private void resetGame() {
+        dead = false;
+        started = false;
+        score = 0;
+        elapsedTime = 0;
+        scoreUpdate = false;
+        resetSkillStates();
         GameConfig.ModeSetting setting = GameConfig.getModeSetting(gameMode);
         speed = setting.getStartSpeed();
         timedMode = setting.isTimedMode();
         time = setting.getTimeLimitSec();
-        Food.setSpeedChangeRate(setting.getSpeedChangeRate());
-        Obstacle.init(setting.getObstacleCount());
+        food.setSpeedChangeRate(setting.getSpeedChangeRate());
+        snake.init();
+        obstacle.init(setting.getObstacleCount(), snake);
+        food.init(snake, obstacle);
+        logicAccumulatorMs = 0;
+        renderAlpha = 0f;
+        lastFrameMark = System.currentTimeMillis();
+        if (timer != null) {
+            timer.setDelay(FRAME_DELAY_MS);
+        }
+        updateOverlayButtons();
     }
 
-//   设置面板属性
+    // ========== UI 初始化 ==========
+
     private void setupPanelProperties() {
         this.setLayout(null);
         this.setFocusable(true);
         this.setPreferredSize(new Dimension(814, 685));
     }
 
-//    设置按钮
     private void setupButtons() {
         backButton.setBounds(12, 8, 34, 34);
         settingButton.setBounds(764, 8, 34, 34);
-        // 结束态按钮区域采用上下两行，视觉更居中，不遮挡结算文字
         startButton.setBounds(317, 482, 180, 44);
         menuButton.setBounds(227, 538, 160, 40);
         menu_1Button.setBounds(317, 546, 180, 44);
@@ -248,31 +202,23 @@ public class GamePanel extends JPanel {
         UIFactory.styleMainButton(menuButton, new Color(0x59A5C6), Color.WHITE);
         UIFactory.styleMainButton(rankButton, new Color(0x7D9CF5), Color.WHITE);
 
-        // 左上角返回：回到上一个页面（主菜单不会显示该按钮）
         backButton.addActionListener(e -> Main.goBack());
         settingButton.addActionListener(e -> Main.turnPage("setting"));
         startButton.addActionListener(e -> {
-            if (isDead) {
+            if (dead) {
                 resetGame();
             }
-            // 点击开始后切入运行态，并重置秒级计时起点
-            isStart = true;
+            started = true;
             lastSecondMark = System.currentTimeMillis();
             updateOverlayButtons();
             requestFocusInWindow();
         });
         rankButton.addActionListener(e -> {
-            RankPanel.showRank(MenuPanel.getState());
+            RankPanel.showRank(gameMode);
             Main.turnPage("rank");
         });
-        menuButton.addActionListener(e -> {
-            Main.turnPage("menu");
-            MenuPanel.resetMenu();
-        });
-        menu_1Button.addActionListener(e -> {
-            Main.turnPage("menu");
-            MenuPanel.resetMenu();
-        });
+        menuButton.addActionListener(e -> Main.turnPage("menu"));
+        menu_1Button.addActionListener(e -> Main.turnPage("menu"));
 
         add(backButton);
         add(settingButton);
@@ -283,7 +229,8 @@ public class GamePanel extends JPanel {
         updateOverlayButtons();
     }
 
-//     添加键盘监听器
+    // ========== 输入监听 ==========
+
     private void addKeyboardListener() {
         this.addKeyListener(new KeyAdapter() {
             @Override
@@ -291,7 +238,7 @@ public class GamePanel extends JPanel {
                 if (e == null) return;
 
                 super.keyPressed(e);
-                Snake.keyPressed(e);
+                snake.keyPressed(e);
 
                 if (e.getKeyCode() == KeyEvent.VK_SPACE) {
                     handleSpaceKey();
@@ -317,7 +264,7 @@ public class GamePanel extends JPanel {
         this.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                if (e == null || !isStart || isDead || !isInGameBoard(e.getX(), e.getY())) {
+                if (e == null || !started || dead || !isInGameBoard(e.getX(), e.getY())) {
                     return;
                 }
                 requestFocusInWindow();
@@ -347,26 +294,19 @@ public class GamePanel extends JPanel {
         return x >= 0 && x <= 800 && y >= 50 && y <= 650;
     }
 
-//    处理空格键事件
+    // ========== 游戏控制 ==========
+
     private void handleSpaceKey() {
-        if (isDead) {
+        if (dead) {
             resetGame();
             return;
         }
 
-        isStart = !isStart;
-        if (isStart) {
+        started = !started;
+        if (started) {
             lastSecondMark = System.currentTimeMillis();
         } else {
-            speedBoostHolding = false;
-            speedBoostPressStart = 0L;
-            speedBoostKeyPressed = false;
-            speedBoostMousePressed = false;
-            goldHolding = false;
-            goldActive = false;
-            goldPressStart = 0L;
-            goldKeyPressed = false;
-            goldMousePressed = false;
+            resetSkillStates();
             if (timer != null) {
                 timer.setDelay(FRAME_DELAY_MS);
             }
@@ -374,18 +314,15 @@ public class GamePanel extends JPanel {
         updateOverlayButtons();
     }
 
+    // ========== 技能系统 ==========
+
     private void handleSkillKeyPressed(int keyCode) {
-        if (!isStart || isDead) {
-            return;
-        }
+        if (!started || dead) return;
 
         long now = System.currentTimeMillis();
         if (keyCode == KeyEvent.VK_Q) {
             pressSpeedBoostSource(false, now);
-            return;
-        }
-
-        if (keyCode == KeyEvent.VK_F) {
+        } else if (keyCode == KeyEvent.VK_F) {
             pressGoldSource(false, now);
         }
     }
@@ -394,26 +331,18 @@ public class GamePanel extends JPanel {
         long now = System.currentTimeMillis();
         if (keyCode == KeyEvent.VK_Q) {
             releaseSpeedBoostSource(false, now);
-            return;
-        }
-
-        if (keyCode == KeyEvent.VK_F) {
+        } else if (keyCode == KeyEvent.VK_F) {
             releaseGoldSource(false, now);
         }
     }
 
     private void handleSkillMousePressed(int button) {
-        if (!isStart || isDead) {
-            return;
-        }
+        if (!started || dead) return;
 
         long now = System.currentTimeMillis();
         if (button == MouseEvent.BUTTON3) {
             pressSpeedBoostSource(true, now);
-            return;
-        }
-
-        if (button == MouseEvent.BUTTON1) {
+        } else if (button == MouseEvent.BUTTON1) {
             pressGoldSource(true, now);
         }
     }
@@ -422,10 +351,7 @@ public class GamePanel extends JPanel {
         long now = System.currentTimeMillis();
         if (button == MouseEvent.BUTTON3) {
             releaseSpeedBoostSource(true, now);
-            return;
-        }
-
-        if (button == MouseEvent.BUTTON1) {
+        } else if (button == MouseEvent.BUTTON1) {
             releaseGoldSource(true, now);
         }
     }
@@ -436,7 +362,6 @@ public class GamePanel extends JPanel {
         } else {
             speedBoostKeyPressed = true;
         }
-
         if (!speedBoostHolding && now >= speedBoostCooldownUntil) {
             speedBoostHolding = true;
             speedBoostPressStart = now;
@@ -449,15 +374,8 @@ public class GamePanel extends JPanel {
         } else {
             speedBoostKeyPressed = false;
         }
-
-        if (!speedBoostHolding) {
-            return;
-        }
-
-        if (speedBoostKeyPressed || speedBoostMousePressed) {
-            return;
-        }
-
+        if (!speedBoostHolding) return;
+        if (speedBoostKeyPressed || speedBoostMousePressed) return;
         speedBoostHolding = false;
         speedBoostPressStart = 0L;
         speedBoostCooldownUntil = now + SPEED_BOOST_COOLDOWN_MS;
@@ -469,7 +387,6 @@ public class GamePanel extends JPanel {
         } else {
             goldKeyPressed = true;
         }
-
         if (!goldHolding && now >= goldCooldownUntil) {
             goldHolding = true;
             goldActive = true;
@@ -483,15 +400,8 @@ public class GamePanel extends JPanel {
         } else {
             goldKeyPressed = false;
         }
-
-        if (!goldHolding) {
-            return;
-        }
-
-        if (goldKeyPressed || goldMousePressed) {
-            return;
-        }
-
+        if (!goldHolding) return;
+        if (goldKeyPressed || goldMousePressed) return;
         goldHolding = false;
         goldActive = false;
         goldPressStart = 0L;
@@ -517,47 +427,14 @@ public class GamePanel extends JPanel {
             goldKeyPressed = false;
             goldMousePressed = false;
         }
-
     }
 
     private int getCurrentLogicDelay() {
         return speedBoostHolding ? Math.max(speed - SPEED_BOOST_DELTA_MS, 30) : Math.max(speed, 30);
     }
 
-//     重置游戏状态
-    private void resetGame() {
-        isDead = false;
-        isStart = false;
-        score = 0;
-        elapsedTime = 0;
-        gameMode = MenuPanel.getState();
-        applyModeSetting();
-        Snake.init();
-        Food.init();
-        scoreUpdate = false;
-        lastSecondMark = System.currentTimeMillis();
-        speedBoostHolding = false;
-        speedBoostPressStart = 0L;
-        speedBoostCooldownUntil = 0L;
-        speedBoostKeyPressed = false;
-        speedBoostMousePressed = false;
-        goldHolding = false;
-        goldActive = false;
-        goldPressStart = 0L;
-        goldCooldownUntil = 0L;
-        goldKeyPressed = false;
-        goldMousePressed = false;
-        logicAccumulatorMs = 0;
-        renderAlpha = 0f;
-        lastFrameMark = System.currentTimeMillis();
-        if (timer != null) {
-            timer.setDelay(FRAME_DELAY_MS);
-        }
-        // 重置后回到“待开始”界面，保留开始按钮
-        updateOverlayButtons();
-    }
+    // ========== 定时器与游戏循环 ==========
 
-//     初始化定时器
     private void initializeTimer() {
         try {
             timer = new Timer(FRAME_DELAY_MS, new ActionListener() {
@@ -570,25 +447,25 @@ public class GamePanel extends JPanel {
                     long delta = Math.max(0L, Math.min(120L, now - lastFrameMark));
                     lastFrameMark = now;
 
-                    if (isStart && !isDead) {
+                    if (started && !dead) {
                         updateSkillStates();
                         logicAccumulatorMs += delta;
                         int logicDelay = getCurrentLogicDelay();
                         try {
-                            while (logicAccumulatorMs >= logicDelay && !isDead) {
-                                Snake.move();
-                                Food.eat();
+                            while (logicAccumulatorMs >= logicDelay && !dead) {
+                                snake.move(obstacle, GamePanel.this);
+                                food.eat(snake, GamePanel.this);
                                 logicAccumulatorMs -= logicDelay;
                             }
                             renderAlpha = Math.max(0f, Math.min(1f, logicAccumulatorMs / (float) Math.max(1, logicDelay)));
                             updateGameTime();
-                            if (isDead) {
+                            if (dead) {
                                 endGame();
                             }
                         } catch (Exception ex) {
                             System.err.println("游戏逻辑执行错误: " + ex.getMessage());
-                            isDead = true;
-                            isStart = false;
+                            dead = true;
+                            started = false;
                             endGame();
                         }
                     } else {
@@ -604,13 +481,46 @@ public class GamePanel extends JPanel {
         }
     }
 
-//      绘制游戏面板
+    private void updateGameTime() {
+        long now = System.currentTimeMillis();
+        if (lastSecondMark == 0) {
+            lastSecondMark = now;
+            return;
+        }
+
+        if (now - lastSecondMark >= 1000) {
+            int step = (int) ((now - lastSecondMark) / 1000);
+            elapsedTime += step;
+            lastSecondMark += step * 1000L;
+
+            if (timedMode) {
+                time -= step;
+                if (time <= 0) {
+                    time = 0;
+                    dead = true;
+                    started = false;
+                }
+            }
+        }
+    }
+
+    private void endGame() {
+        if (scoreUpdate) return;
+        resetSkillStates();
+        if (timer != null) {
+            timer.setDelay(FRAME_DELAY_MS);
+        }
+        RankPanel.updateRank(score, gameMode, elapsedTime);
+        scoreUpdate = true;
+    }
+
+    // ========== 绘制 ==========
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 
         try {
-            // 检查图形上下文
             if (g == null) return;
 
             drawBackground(g);
@@ -623,12 +533,10 @@ public class GamePanel extends JPanel {
             drawGameStateMessage(g);
         } catch (Exception e) {
             System.err.println("绘制过程中发生错误: " + e.getMessage());
-            // 绘制错误信息
             drawErrorMessage(g, "绘制错误: " + e.getMessage());
         }
     }
 
-//     绘制背景
     private void drawBackground(Graphics g) {
         Graphics2D g2d = (Graphics2D) g.create();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -640,58 +548,43 @@ public class GamePanel extends JPanel {
         g2d.dispose();
     }
 
-//      绘制游戏区域
     private void drawGameArea(Graphics g) {
         g.setColor(GameConfig.getBoardColor());
         g.fillRect(0, 50, 800, 600);
     }
 
-//    绘制食物
     private void drawFood(Graphics g) {
-        for(int i = 0; i < Food.getFoodCount(); i++) {
-            Images.food.paintIcon(this, g, Food.getFx(i), Food.getFy(i));
+        for (int i = 0; i < food.getFoodCount(); i++) {
+            Images.food.paintIcon(this, g, food.getFoodX(i), food.getFoodY(i));
         }
     }
 
-//      绘制网格
     private void drawGrid(Graphics g) {
         g.setColor(GameConfig.getGridColor());
-
-        // 绘制垂直线
         for (int x = 0; x <= 32; x++) {
-            int pX = x * 25;
-            g.drawLine(pX, 50, pX, 650);
+            g.drawLine(x * 25, 50, x * 25, 650);
         }
-
-        // 绘制水平线
         for (int y = 0; y <= 24; y++) {
-            int pY = y * 25 + 50;
-            g.drawLine(0, pY, 800, pY);
+            g.drawLine(0, y * 25 + 50, 800, y * 25 + 50);
         }
     }
 
     private void drawObstacle(Graphics g) {
-        Obstacle.draw(g);
+        obstacle.draw(g, goldActive);
     }
 
-//    绘制蛇
     private void drawSnake(Graphics g) {
-        int snakeLength = Snake.getLength();
+        int snakeLength = snake.getLength();
         if (snakeLength <= 0) return;
-        float alpha = (isStart && !isDead) ? renderAlpha : 1f;
-
-        // 绘制蛇头
+        float alpha = (started && !dead) ? renderAlpha : 1f;
         drawSnakeHead(g, alpha);
-
-        // 绘制蛇身
         drawSnakeBody(g, snakeLength, alpha);
     }
 
-//    绘制蛇头
     private void drawSnakeHead(Graphics g, float alpha) {
-        String direction = Snake.getDirection();
-        int headX = Snake.getRenderX(0, alpha);
-        int headY = Snake.getRenderY(0, alpha);
+        String direction = snake.getDirection();
+        int headX = snake.getRenderX(0, alpha);
+        int headY = snake.getRenderY(0, alpha);
 
         ImageIcon headIcon = switch (direction) {
             case "R" -> Images.right;
@@ -704,32 +597,29 @@ public class GamePanel extends JPanel {
         headIcon.paintIcon(this, g, headX, headY);
     }
 
-//     绘制蛇身
     private void drawSnakeBody(Graphics g, int snakeLength, float alpha) {
         for (int i = 1; i < snakeLength && i < 200; i++) {
-            int bodyX = Snake.getRenderX(i, alpha);
-            int bodyY = Snake.getRenderY(i, alpha);
+            int bodyX = snake.getRenderX(i, alpha);
+            int bodyY = snake.getRenderY(i, alpha);
             if (bodyX >= -25 && bodyX <= 800 && bodyY >= 25 && bodyY <= 650) {
                 Images.body.paintIcon(this, g, bodyX, bodyY);
             }
         }
     }
 
-//      绘制游戏信息
     private void drawGameInfo(Graphics g) {
         Graphics2D g2d = (Graphics2D) g.create();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         UIFactory.drawRoundedPanel(g2d, 50, 6, 700, 34, 12, INFO_CARD_FILL, INFO_CARD_BORDER);
 
-        Color infoTextColor = GameConfig.getInfoColor();
-        g2d.setColor(infoTextColor);
+        g2d.setColor(INFO_TEXT_COLOR);
         g2d.setFont(SCORE_FONT);
 
         g2d.drawString("得分：" + score, 70, 31);
-        g2d.drawString("长度：" + Snake.getLength(), 240, 31);
-        g2d.setColor(infoTextColor);
+        g2d.drawString("长度：" + snake.getLength(), 240, 31);
+        g2d.setColor(INFO_TEXT_COLOR);
         g2d.drawString("速度：" + (speedBoostHolding ? Math.max(speed - SPEED_BOOST_DELTA_MS, 30) : speed) + "ms", 400, 31);
-        
+
         if (timedMode) {
             g2d.drawString("剩余：" + time + "s", 630, 31);
         } else {
@@ -741,33 +631,8 @@ public class GamePanel extends JPanel {
     }
 
     private void drawSkillIcons(Graphics2D g2d, int x, int y, long now) {
-        drawSingleSkillIcon(
-                g2d,
-                x,
-                y,
-                "Q/右",
-                speedBoostHolding,
-                speedBoostPressStart,
-                speedBoostCooldownUntil,
-                SPEED_BOOST_MAX_HOLD_MS,
-                SPEED_SKILL_COLOR,
-                true,
-                now
-        );
-
-        drawSingleSkillIcon(
-                g2d,
-            x + 110,
-                y,
-                "F/左",
-                goldHolding,
-                goldPressStart,
-                goldCooldownUntil,
-                GOLD_MAX_HOLD_MS,
-                GOLD_SKILL_COLOR,
-                false,
-                now
-        );
+        drawSingleSkillIcon(g2d, x, y, "Q/右", speedBoostHolding, speedBoostPressStart, speedBoostCooldownUntil, SPEED_BOOST_MAX_HOLD_MS, SPEED_SKILL_COLOR, true, now);
+        drawSingleSkillIcon(g2d, x + 110, y, "F/左", goldHolding, goldPressStart, goldCooldownUntil, GOLD_MAX_HOLD_MS, GOLD_SKILL_COLOR, false, now);
     }
 
     private void drawSingleSkillIcon(Graphics2D g2d, int x, int y, String hotkeyLabel,
@@ -803,7 +668,7 @@ public class GamePanel extends JPanel {
             g2d.drawString(secondsHint + "s", secondsX, y + 14);
         }
     }
-     // 绘制闪电图标
+
     private void drawLightningIcon(Graphics2D g2d, int x, int y, Color color) {
         Polygon bolt = new Polygon();
         bolt.addPoint(x + 4, y);
@@ -816,7 +681,7 @@ public class GamePanel extends JPanel {
         g2d.setColor(color);
         g2d.fillPolygon(bolt);
     }
-      // 绘制盾牌标
+
     private void drawShieldIcon(Graphics2D g2d, int x, int y, Color color) {
         Polygon shield = new Polygon();
         shield.addPoint(x + 1, y + 2);
@@ -828,13 +693,11 @@ public class GamePanel extends JPanel {
         g2d.fillPolygon(shield);
     }
 
-//     绘制游戏状态消息
     private void drawGameStateMessage(Graphics g) {
-        // 状态提示与按钮显隐绑定，保证界面元素与当前状态一致
-        if (!isStart && !isDead) {
+        if (!started && !dead) {
             drawStartMessage(g);
             updateOverlayButtons();
-        } else if (isDead && !isStart) {
+        } else if (dead && !started) {
             drawGameOverMessage(g);
             updateOverlayButtons();
         } else {
@@ -842,7 +705,6 @@ public class GamePanel extends JPanel {
         }
     }
 
-//     绘制开始游戏消息
     private void drawStartMessage(Graphics g) {
         Graphics2D g2d = (Graphics2D) g.create();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -856,7 +718,6 @@ public class GamePanel extends JPanel {
         g2d.dispose();
     }
 
-//     绘制游戏结束消息
     private void drawGameOverMessage(Graphics g) {
         Graphics2D g2d = (Graphics2D) g.create();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -879,19 +740,12 @@ public class GamePanel extends JPanel {
         g2d.drawString("本局用时", 284, 402);
         g2d.drawString(elapsedTime + "s", 468, 402);
 
-        /*g.setColor(new Color(0xFFEAEAEA, true));
-        g.setFont(new Font("幼圆", Font.BOLD, 24));
-        String tipMessage = "按空格重新开始，或点击左上角返回";
-        int x4 = (814 - g.getFontMetrics().stringWidth(tipMessage)) / 2;
-        g.drawString(tipMessage, x4, 450);*/
-
-        RankPanel.showRank(MenuPanel.getState());
+        RankPanel.showRank(gameMode);
         g2d.dispose();
     }
 
     private void updateOverlayButtons() {
-        // 游戏进行中不显示大按钮，避免遮挡网格
-        if (isStart && !isDead) {
+        if (started && !dead) {
             startButton.setVisible(false);
             menuButton.setVisible(false);
             rankButton.setVisible(false);
@@ -899,66 +753,16 @@ public class GamePanel extends JPanel {
             return;
         }
 
-        // 待开始：仅显示开始；结束后：显示开始+返回菜单+排行榜
         startButton.setVisible(true);
-        menu_1Button.setVisible(!isStart&&!isDead);
-        menuButton.setVisible(isDead);
-        rankButton.setVisible(isDead);
+        menu_1Button.setVisible(!started && !dead);
+        menuButton.setVisible(dead);
+        rankButton.setVisible(dead);
     }
 
     private void drawErrorMessage(Graphics g, String errorMessage) {
         if (g == null) return;
-
         g.setColor(Color.RED);
         g.setFont(SCORE_FONT);
         g.drawString("错误: " + errorMessage, 20, 665);
     }
-
-    private void updateGameTime() {
-        long now = System.currentTimeMillis();
-        if (lastSecondMark == 0) {
-            lastSecondMark = now;
-            return;
-        }
-
-        if (now - lastSecondMark >= 1000) {
-            int step = (int) ((now - lastSecondMark) / 1000);
-            elapsedTime += step;
-            lastSecondMark += step * 1000L;
-
-            // 限时模式下同步扣减剩余时间，到 0 直接判负
-            if (timedMode) {
-                time -= step;
-                if (time <= 0) {
-                    time = 0;
-                    isDead = true;
-                    isStart = false;
-                }
-            }
-        }
-    }
-
-    private void endGame() {
-        if (scoreUpdate) {
-            return;
-        }
-        speedBoostHolding = false;
-        speedBoostPressStart = 0L;
-        speedBoostKeyPressed = false;
-        speedBoostMousePressed = false;
-        goldHolding = false;
-        goldActive = false;
-        goldPressStart = 0L;
-        goldKeyPressed = false;
-        goldMousePressed = false;
-        if (timer != null) {
-            timer.setDelay(FRAME_DELAY_MS);
-        }
-        // 只在首次结算时写入排行榜，避免重复触发
-        RankPanel.updateRank(score, gameMode, elapsedTime);
-        scoreUpdate = true;
-        //initializeGameState();
-    }
 }
-
-

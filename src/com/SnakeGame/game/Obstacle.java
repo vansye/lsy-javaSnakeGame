@@ -7,60 +7,55 @@ import java.util.Random;
  * 障碍物管理类 - 负责生成、绘制和碰撞判断
  */
 public class Obstacle {
-    private static final int[] ox = new int[60];
-    private static final int[] oy = new int[60];
-    private static int count = 0;
-    private static final Random random = new Random();
+    private final int[] obstacleX = new int[60];
+    private final int[] obstacleY = new int[60];
+    private int count = 0;
+    private final Random random = new Random();
 
-    private Obstacle() {
-    }
-
-    public static void init(int obstacleCount) {
-        // 限制上限，避免障碍过多导致几乎无可用格子。
+    // 按数量重建障碍物
+    public void init(int obstacleCount, Snake snake) {
         count = Math.max(0, Math.min(obstacleCount, 60));
         for (int i = 0; i < count; i++) {
-            generateObstacle(i);
+            generateObstacle(i, snake);
         }
     }
 
-    private static void generateObstacle(int index) {
+    // 生成单个障碍，有限次数重试避免死循环
+    private void generateObstacle(int index, Snake snake) {
         int tryCount = 0;
         while (tryCount < 120) {
             int x = random.nextInt(31) * 25;
             int y = random.nextInt(22) * 25 + 50;
 
-            if (isSafeForSpawn(x, y, index)) {
-                ox[index] = x;
-                oy[index] = y;
+            if (isSafeForSpawn(x, y, index, snake)) {
+                obstacleX[index] = x;
+                obstacleY[index] = y;
                 return;
             }
             tryCount++;
         }
 
-        // 重试失败后兜底到固定点，保证数组里一定有值，避免未初始化坐标。
-        ox[index] = 0;
-        oy[index] = 50;
+        obstacleX[index] = 0;
+        obstacleY[index] = 50;
     }
 
-    private static boolean isSafeForSpawn(int x, int y, int currentIndex) {
-        // 避开蛇初始活动区域，防止开局即“必撞”或几乎无路可走。
+    // 刷新规则：避开初始区域、蛇身和已有障碍
+    private boolean isSafeForSpawn(int x, int y, int currentIndex, Snake snake) {
+        // 避开蛇初始活动区域，防止开局即"必撞"
         if ((x >= 200 && x <= 400) && (y >= 250 && y <= 350)) {
             return false;
         }
-        for(int i = 0; i < Food.getFoodCount(); i++){
-        if (x == Food.getFx(i) && y == Food.getFy(i)) {
-            return false;
-            }
-        }
 
-        for (int i = 0; i < Snake.getLength(); i++) {
-            if (x == Snake.skx[i] && y == Snake.sky[i]) {
+        // 避开蛇身（此时蛇已初始化）
+        for (int i = 0; i < snake.getLength(); i++) {
+            if (x == snake.segmentX[i] && y == snake.segmentY[i]) {
                 return false;
             }
         }
 
+        // 避开其他已生成的障碍
         for (int i = 0; i < currentIndex; i++) {
-            if (x == ox[i] && y == oy[i]) {
+            if (x == obstacleX[i] && y == obstacleY[i]) {
                 return false;
             }
         }
@@ -68,24 +63,25 @@ public class Obstacle {
         return true;
     }
 
-    public static boolean contains(int x, int y) {
+    // 判断给定坐标是否被障碍占用
+    public boolean contains(int x, int y) {
         for (int i = 0; i < count; i++) {
-            if (x == ox[i] && y == oy[i]) {
+            if (x == obstacleX[i] && y == obstacleY[i]) {
                 return true;
             }
         }
         return false;
     }
 
-    public static void draw(Graphics g) {
-        if (GamePanel.isGoldActive()) {
+    // 绘制障碍：金身期间使用提示色
+    public void draw(Graphics g, boolean goldActive) {
+        if (goldActive) {
             g.setColor(new Color(0xB8F5A6));
         } else {
             g.setColor(GameConfig.getObstacleColor());
         }
         for (int i = 0; i < count; i++) {
-            g.fillRoundRect(ox[i], oy[i], 25, 25, 8, 8);
+            g.fillRoundRect(obstacleX[i], obstacleY[i], 25, 25, 8, 8);
         }
     }
 }
-

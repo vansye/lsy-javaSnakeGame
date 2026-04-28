@@ -24,16 +24,19 @@ public final class UIFactory {
         throw new AssertionError("工具类不应被实例化");
     }
 
+    // 主按钮样式（菜单/操作按钮）
     public static void styleMainButton(JButton button, Color bg, Color fg) {
         applyButtonStyle(button, bg, fg, MAIN_FONT, new Color(255, 255, 255, 160), 2,
                 new EmptyBorder(8, 16, 8, 16));
     }
 
+    // 图标按钮样式（返回/设置按钮）
     public static void styleIconButton(JButton button, Color bg, Color fg) {
         applyButtonStyle(button, bg, fg, ICON_FONT, new Color(255, 255, 255, 190), 1,
                 new EmptyBorder(2, 2, 2, 2));
     }
 
+    // 按钮样式核心实现
     private static void applyButtonStyle(JButton button, Color bg, Color fg, Font font,
                                          Color borderColor, int borderWidth, EmptyBorder padding) {
         button.setFont(font);
@@ -51,6 +54,7 @@ public final class UIFactory {
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
     }
 
+    // 将传入颜色与主题色混合，保证全局视觉统一
     private static Color harmonizeButtonColor(Color input) {
         if (input == null) {
             return BUTTON_THEME_BASE;
@@ -99,6 +103,7 @@ public final class UIFactory {
         }
     }
 
+    // 文本输入框样式
     public static void styleTextField(JTextField textField) {
         // RGBA 第 4 个参数是透明度(0-255)，这里用轻微透明提升层次感。
         textField.setFont(FORM_FONT);
@@ -112,6 +117,7 @@ public final class UIFactory {
         ));
     }
 
+    // 下拉框样式
     public static void styleComboBox(JComboBox<?> comboBox) {
         // 与文本框统一配色，保持表单控件风格一致。
         comboBox.setFont(FORM_FONT);
@@ -120,6 +126,7 @@ public final class UIFactory {
         comboBox.setBorder(BorderFactory.createLineBorder(LIGHT_BORDER, 2, true));
     }
 
+    // 复选框样式
     public static void styleCheckBox(JCheckBox checkBox, Color background) {
         checkBox.setOpaque(true);
         checkBox.setBackground(background);
@@ -128,6 +135,7 @@ public final class UIFactory {
         checkBox.setFocusPainted(false);
     }
 
+    // 绘制垂直柔和渐变背景
     public static void paintSoftGradient(Graphics2D g2d, int width, int height, Color topColor, Color bottomColor) {
         GradientPaint paint = new GradientPaint(0, 0, topColor, 0, Math.max(height, 1), bottomColor);
         Paint oldPaint = g2d.getPaint();
@@ -136,6 +144,7 @@ public final class UIFactory {
         g2d.setPaint(oldPaint);
     }
 
+    // 绘制圆角卡片
     public static void drawRoundedPanel(Graphics2D g2d, int x, int y, int width, int height,
                                         int arc, Color fillColor, Color borderColor) {
         // arc 同时用于水平/垂直圆角半径，值越大圆角越明显。
@@ -147,6 +156,7 @@ public final class UIFactory {
         g2d.draw(panel);
     }
 
+    // 绘制带阴影的居中标题
     public static void drawCenteredTitle(Graphics2D g2d, String text, int centerX, int baselineY,
                                          Font font, Color textColor, Color shadowColor) {
         // FontMetrics 用像素宽度做精确居中，避免不同字体下“视觉不居中”。

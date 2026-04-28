@@ -2,12 +2,17 @@ package com.SnakeGame.game;
 
 import javax.swing.*;
 import java.awt.*;
+
+/**
+ * 游戏介绍页：面向用户展示玩法与规则
+ */
 public class GameIntroPanel extends JPanel {
     private final JButton backButton = new JButton("<");
     private final JButton startButton = new JButton("开始游戏");
     private final JButton menuButton = new JButton("返回菜单");
     private final JTextPane introTextPane = new JTextPane();
 
+    // 初始化介绍页布局与组件
     public GameIntroPanel() {
         setLayout(null);
         setFocusable(true);
@@ -18,6 +23,7 @@ public class GameIntroPanel extends JPanel {
         addComponents();
     }
 
+    // 设置导航按钮与事件
     private void setupButtons() {
         backButton.setBounds(12, 10, 34, 34);
         startButton.setBounds(620, 602, 150, 42);
@@ -32,6 +38,7 @@ public class GameIntroPanel extends JPanel {
         menuButton.addActionListener(e -> Main.turnPage("menu"));
     }
 
+    // 配置介绍文本区域（HTML 富文本）
     private void setupIntroText() {
         introTextPane.setEditable(false);
         introTextPane.setFocusable(false);
@@ -42,6 +49,7 @@ public class GameIntroPanel extends JPanel {
         introTextPane.setCaretPosition(0);
     }
 
+    // 添加滚动内容和底部操作按钮
     private void addComponents() {
         JScrollPane scrollPane = new JScrollPane(introTextPane);
         scrollPane.setBounds(42, 106, 730, 484);
@@ -56,6 +64,7 @@ public class GameIntroPanel extends JPanel {
         add(menuButton);
     }
 
+    // 生成用户向导文案（来源于 README 的玩法说明）
     private String buildUserIntroHtml() {
         return """
                 <html>
@@ -125,6 +134,7 @@ public class GameIntroPanel extends JPanel {
     }
 
     @Override
+    // 绘制介绍页背景与标题卡片
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g.create();

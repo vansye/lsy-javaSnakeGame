@@ -32,6 +32,7 @@ public class SettingsPanel extends JPanel {
     private Color selectedGridColor;
     private Color selectedObstacleColor;
 
+    // 构建设置页：布局、控件和事件一次性完成
     public SettingsPanel() {
         setupPanel();
         setupControls();
@@ -39,6 +40,7 @@ public class SettingsPanel extends JPanel {
         refreshModeFields();
     }
 
+    // 初始化面板容器属性
     private void setupPanel() {
         setLayout(null);
         setFocusable(true);
@@ -46,6 +48,7 @@ public class SettingsPanel extends JPanel {
         contentPanel.setOpaque(false);
     }
 
+    // 创建表单控件并放入可滚动内容区
     private void setupControls() {
         JLabel title = new JLabel("游戏设置");
         title.setBounds(286, 24, 200, 40);
@@ -104,6 +107,7 @@ public class SettingsPanel extends JPanel {
         setupIconButton(backButton, 12, 12, new Color(0x4A88D0));
 
         contentPanel.setPreferredSize(new Dimension(640, 680));
+        // 表单内容高于可视区域时交给 JScrollPane 管理，后续新增设置项无需改外层布局。
         scrollPane = new JScrollPane(contentPanel);
         scrollPane.setBounds(65, 78, 670, 560);
         scrollPane.setBorder(BorderFactory.createLineBorder(new Color(0x9CD0F5), 0, true));
@@ -116,6 +120,7 @@ public class SettingsPanel extends JPanel {
         refreshModeFields();
     }
 
+    // 统一创建字段标题标签
     private void addLabel(String text, int x, int y) {
         JLabel label = new JLabel(text);
         label.setBounds(x, y, 140, 35);
@@ -124,18 +129,21 @@ public class SettingsPanel extends JPanel {
         contentPanel.add(label);
     }
 
+    // 统一创建主按钮
     private void setupButton(JButton button, int x, int y, Color bgColor) {
         button.setBounds(x, y, 170, 44);
         UIFactory.styleMainButton(button, bgColor, Color.WHITE);
         contentPanel.add(button);
     }
 
+    // 统一创建图标按钮（返回）
     private void setupIconButton(JButton button, int x, int y, Color bgColor) {
         button.setBounds(x, y, 34, 34);
         UIFactory.styleIconButton(button, bgColor, Color.WHITE);
         add(button);
     }
 
+    // 绑定模式切换、配色选择与保存事件
     private void bindEvents() {
         // 切换模式时，右侧参数输入框实时切到该模式的当前配置
         modeSelector.addActionListener(e -> {
@@ -203,6 +211,7 @@ public class SettingsPanel extends JPanel {
         backButton.addActionListener(e -> Main.goBack());
     }
 
+    // 将当前模式配置回填到输入框
     private void refreshModeFields() {
         // 回填选中模式的参数，便于可视化编辑
         String mode = (String) modeSelector.getSelectedItem();
@@ -213,6 +222,7 @@ public class SettingsPanel extends JPanel {
         obstacleField.setText(String.valueOf(setting.getObstacleCount()));
         timedModeCheckBox.setSelected(setting.isTimedMode());
 
+        // 皮肤和自定义颜色按模式独立存储，因此切模式时要同步切换预览状态。
         skinSelector.setSelectedItem(GameConfig.getSkinForMode(mode));
         selectedBoardColor = GameConfig.getCustomBoardColor(mode);
         selectedGridColor = GameConfig.getCustomGridColor(mode);
@@ -220,6 +230,7 @@ public class SettingsPanel extends JPanel {
         updateCustomColorControls();
     }
 
+    // 读取输入框并写回当前模式配置
     private void saveCurrentModeSetting() {
         String mode = (String) modeSelector.getSelectedItem();
         // 输入异常时使用默认值兜底，避免界面输入导致配置崩溃
@@ -230,6 +241,7 @@ public class SettingsPanel extends JPanel {
         GameConfig.updateModeSetting(mode, speed, speedRate, timedModeCheckBox.isSelected(), limitTime, obstacleCount);
     }
 
+    // 整型解析兜底，避免非法输入导致异常
     private int parseInt(String value, int defaultValue) {
         try {
             return Integer.parseInt(value.trim());
@@ -238,6 +250,7 @@ public class SettingsPanel extends JPanel {
         }
     }
 
+    // custom 皮肤下启用颜色按钮，其他皮肤仅展示默认提示
     private void updateCustomColorControls() {
         boolean isCustom = "custom".equals(skinSelector.getSelectedItem());
         boardColorButton.setEnabled(isCustom);
@@ -249,16 +262,20 @@ public class SettingsPanel extends JPanel {
         refreshColorButtonView(obstacleColorButton, isCustom ? selectedObstacleColor : null);
     }
 
+    // 页面进入钩子：按来源模式定位并滚动到顶部
     public void onPageEnter(String preferredMode) {
+        // 从游戏页进入设置时用当前模式；从其他入口进入则回退 normal。
         String mode = normalizeMode(preferredMode);
         modeSelector.setSelectedItem(mode);
         GameConfig.setCurrentMode(mode);
         refreshModeFields();
         if (scrollPane != null) {
+            // 每次进入都回到顶部，避免停留在上次滚动位置造成“看起来少了配置项”。
             scrollPane.getVerticalScrollBar().setValue(0);
         }
     }
 
+    // 规范化模式值，非法值回退 normal
     private String normalizeMode(String mode) {
         if ("hard".equals(mode) || "crazy".equals(mode)) {
             return mode;
@@ -266,6 +283,7 @@ public class SettingsPanel extends JPanel {
         return "normal";
     }
 
+    // 颜色按钮预览：显示十六进制并自动切换文字明暗
     private void refreshColorButtonView(JButton button, Color color) {
         if (color == null) {
             button.setText("跟随主题默认");
@@ -280,6 +298,7 @@ public class SettingsPanel extends JPanel {
     }
 
     @Override
+    // 绘制设置页背景卡片
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g.create();

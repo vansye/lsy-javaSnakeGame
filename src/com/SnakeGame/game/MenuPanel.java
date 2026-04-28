@@ -5,14 +5,17 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
+/**
+ * 主菜单面板：负责模式入口与导航
+ */
 public class MenuPanel extends JPanel {
-    private static String state = "normal";
-    JButton normalButton = new JButton("普通模式");
-    JButton hardButton = new JButton("困难模式");
-    JButton crazyButton = new JButton("狂暴模式");
-    JButton IntroButton = new JButton("游戏介绍");
-    static JButton rankingButton = new JButton("排行榜");
-    JButton settingButton = new JButton("⚙");
+    private String selectedMode = "normal";
+    private final JButton normalButton = new JButton("普通模式");
+    private final JButton hardButton = new JButton("困难模式");
+    private final JButton crazyButton = new JButton("狂暴模式");
+    private final JButton IntroButton = new JButton("游戏介绍");
+    private final JButton rankingButton = new JButton("排行榜");
+    private final JButton settingButton = new JButton("⚙");
     private static final Color HERO_FILL = new Color(255, 255, 255, 170);
     private static final Color HERO_BORDER = new Color(0xA8D8FF);
 
@@ -56,9 +59,7 @@ public class MenuPanel extends JPanel {
         normalButton.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                // 进入游戏前先写入当前模式参数，保证 GamePanel 初始化一致
-                state = "normal";
-                applyModeSetting(state);
+                selectedMode = "normal";
                 Main.turnPage("game");
                 repaint();
             }
@@ -66,8 +67,7 @@ public class MenuPanel extends JPanel {
         hardButton.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                state = "hard";
-                applyModeSetting(state);
+                selectedMode = "hard";
                 Main.turnPage("game");
                 repaint();
             }
@@ -75,8 +75,7 @@ public class MenuPanel extends JPanel {
         crazyButton.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                state = "crazy";
-                applyModeSetting(state);
+                selectedMode = "crazy";
                 Main.turnPage("game");
                 repaint();
             }
@@ -84,7 +83,6 @@ public class MenuPanel extends JPanel {
         rankingButton.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                // 主菜单点击排行榜默认展示普通模式，可在排行榜页底部切换
                 RankPanel.showRank("normal");
                 Main.turnPage("rank");
                 repaint();
@@ -112,21 +110,10 @@ public class MenuPanel extends JPanel {
         try {
             drawBackGround(g);
             setMyLabel(g);
-            // drawGuideText(g);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
-
-    /*private void drawGuideText(Graphics g) {
-        Graphics2D g2d = (Graphics2D) g.create();
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        UIFactory.drawRoundedPanel(g2d, 80, 606, 620, 48, 16, new Color(255, 255, 255, 165), new Color(0xA9D4EF));
-        g2d.setColor(new Color(0x2E5D83));
-        g2d.setFont(new Font("幼圆", Font.BOLD, 16));
-        g2d.drawString("游戏指南:方向键/WASD 控制移动，Q/右键 加速（5秒），F/左键 金身（2秒），空格 开始/暂停", 85, 635);
-        g2d.dispose();
-    }*/
 
     private void setMyLabel(Graphics g) {
         Graphics2D g2d = (Graphics2D) g.create();
@@ -144,15 +131,11 @@ public class MenuPanel extends JPanel {
         g2d.dispose();
     }
 
-    public static String getState() {
-        return MenuPanel.state;
+    public String getSelectedMode() {
+        return selectedMode;
     }
 
-//    public static void resetRankingMode() {
-//
-//    }
-
-    public static void resetMenu() {
+    public void resetMenu() {
         rankingButton.setVisible(true);
     }
 
@@ -174,17 +157,4 @@ public class MenuPanel extends JPanel {
         }
         g2d.dispose();
     }
-
-    private void applyModeSetting(String mode) {
-        // 同步写入 GamePanel/Food/Obstacle 的运行参数，避免跨页面参数不一致
-        GamePanel.setGameMode(mode);
-        GameConfig.setCurrentMode(mode);
-        GameConfig.ModeSetting setting = GameConfig.getModeSetting(mode);
-        GamePanel.setSpeed(setting.getStartSpeed());
-        Food.setSpeedChangeRate(setting.getSpeedChangeRate());
-        GamePanel.setTimedMode(setting.isTimedMode());
-        GamePanel.setTimeLimit(setting.getTimeLimitSec());
-        Obstacle.init(setting.getObstacleCount());
-    }
-
 }

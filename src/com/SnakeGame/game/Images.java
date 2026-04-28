@@ -1,14 +1,11 @@
 package com.SnakeGame.game;
-
-//一个专门用来获取图片的类
 import javax.swing.*;
 
 import java.net.URL;
 
-
-// 图像资源管理类
-// 负责加载和管理游戏所需的所有图像资源
-
+/**
+ * 图像资源管理类：统一加载游戏贴图
+ */
 public final class Images {
     
     // 私有构造函数防止实例化
@@ -36,6 +33,7 @@ public final class Images {
     }
     
 
+    // 按 classpath 路径获取资源 URL
     private static URL getResource(String path) {
         URL url = Images.class.getResource(path);
         if (url == null) {
@@ -44,7 +42,7 @@ public final class Images {
         return url;
     }
 
-//     创建图像图标，包含空值检查
+    // 创建图标并在缺失时返回空图标兜底
     private static ImageIcon createImageIcon(URL url, String name) {
         if (url == null) {
             System.err.println("错误: 无法加载图像: " + name);
@@ -54,6 +52,7 @@ public final class Images {
         return new ImageIcon(url);
     }
 
+    // 皮肤入口：当前版本固定加载 classic 素材
     public static void loadSnakeSkin(String skinName) {
         if (!loadOriginalSnakeSprites()) {
             System.err.println("警告: 原始蛇图片加载失败");
@@ -61,6 +60,7 @@ public final class Images {
         GameConfig.setCurrentSnakeSkin("classic", false);
     }
 
+    // 读取原始蛇头/蛇身方向贴图
     private static boolean loadOriginalSnakeSprites() {
         URL bodyUrl = getResource("/images/body.png");
         URL leftUrl = getResource("/images/left.png");
@@ -78,9 +78,4 @@ public final class Images {
         return true;
     }
 
-//      检查所有必需的图像资源是否都已成功加载
-    public static boolean allResources() {
-        return body != null && food != null && left != null && right != null && up != null && down != null
-                && title != null && background != null && foodURL != null && titleURL != null && backgroundURL != null;
-    }
 }

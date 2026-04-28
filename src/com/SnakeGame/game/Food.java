@@ -8,63 +8,60 @@ import java.util.Random;
  * 食物类 - 管理食物的位置生成和碰撞检测
  */
 public class Food {
-    // 定义食物数量常量
     private static final int FOOD_COUNT = 5;
-    
-    // 使用列表存储多个食物的坐标
-    private static List<Integer> foodXList = new ArrayList<>();
-    private static List<Integer> foodYList = new ArrayList<>();
-    
-    private static int speedChangeRate = 5;
-    static Random random = new Random();
-    
-    // 食物初始化：一次性生成 5 个食物
-    public static void init(){
+
+    private List<Integer> foodXList = new ArrayList<>();
+    private List<Integer> foodYList = new ArrayList<>();
+
+    private int speedChangeRate = 5;
+    private Random random = new Random();
+
+    // 食物初始化：重置并补满固定数量
+    public void init(Snake snake, Obstacle obstacle) {
         foodXList.clear();
         foodYList.clear();
         for (int i = 0; i < FOOD_COUNT; i++) {
-            spawnOneFood();
+            spawnOneFood(snake, obstacle);
         }
     }
-    
-    // 随机生成单个食物（带防重叠判定）
-    private static void spawnOneFood() {
+
+    // 随机生成单个食物（与蛇、障碍、其他食物互斥）
+    private void spawnOneFood(Snake snake, Obstacle obstacle) {
         int x = random.nextInt(31) * 25;
         int y = random.nextInt(22) * 25 + 50;
-        if (!Judge(x, y)) {
-            spawnOneFood(); // 递归直到找到合法位置
+        if (!isValidPosition(x, y, snake, obstacle)) {
+            spawnOneFood(snake, obstacle);
         } else {
             foodXList.add(x);
             foodYList.add(y);
         }
     }
-    
-    // 吃食物方法：遍历所有食物，吃到后移除并立即补位
-    public static void eat(){
-        int headX = Snake.skx[0];
-        int headY = Snake.sky[0];
-        
+
+    // 吃食物：命中后加分、加长、调速并立即补位
+    public void eat(Snake snake, GamePanel gamePanel) {
+        int headX = snake.segmentX[0];
+        int headY = snake.segmentY[0];
+
         // 倒序遍历，防止删除元素时索引错位
         for (int i = foodXList.size() - 1; i >= 0; i--) {
             if (headX == foodXList.get(i) && headY == foodYList.get(i)) {
-                Snake.setLength(Snake.getLength() + 1);
-                GamePanel.setScore(GamePanel.getScore() + 10);
-                GamePanel.setSpeed(GamePanel.getSpeed() - speedChangeRate);
-                GamePanel.setSpeed(Math.max(GamePanel.getSpeed(), 30));
-                
+                snake.setLength(snake.getLength() + 1);
+                gamePanel.setScore(gamePanel.getScore() + 10);
+                gamePanel.setSpeed(gamePanel.getSpeed() - speedChangeRate);
+
                 // 移除被吃的食物并生成新的
                 foodXList.remove(i);
                 foodYList.remove(i);
-                spawnOneFood();
+                spawnOneFood(snake, gamePanel.getObstacle());
             }
         }
     }
-    
-    // 检查坐标是否合法（不与蛇身或障碍物重叠）
-    public static boolean Judge(int x, int y){
+
+    // 检查坐标是否合法（不与蛇身/食物/障碍重叠）
+    public boolean isValidPosition(int x, int y, Snake snake, Obstacle obstacle) {
         // 检查是否与蛇身节点重合
-        for(int i = 0; i < Snake.getLength(); i++){
-            if(x == Snake.skx[i] && y == Snake.sky[i]){
+        for (int i = 0; i < snake.getLength(); i++) {
+            if (x == snake.segmentX[i] && y == snake.segmentY[i]) {
                 return false;
             }
         }
@@ -75,28 +72,26 @@ public class Food {
             }
         }
         // 食物不能刷在障碍物上
-        if (Obstacle.contains(x, y)) {
+        if (obstacle.contains(x, y)) {
             return false;
         }
         return true;
     }
 
-    public static void setSpeedChangeRate(int speedChangeRate) {
-        Food.speedChangeRate = speedChangeRate;
+    // 设置每次进食后的速度变化值
+    public void setSpeedChangeRate(int speedChangeRate) {
+        this.speedChangeRate = speedChangeRate;
     }
 
-    // 获取指定索引的食物 X 坐标
-    public static int getFx(int index) {
+    public int getFoodX(int index) {
         return foodXList.get(index);
     }
-    
-    // 获取指定索引的食物 Y 坐标
-    public static int getFy(int index) {
+
+    public int getFoodY(int index) {
         return foodYList.get(index);
     }
 
-    // 获取当前食物总数
-    public static int getFoodCount() {
+    public int getFoodCount() {
         return foodXList.size();
     }
 }
